@@ -1,0 +1,64 @@
+server:
+  port: 8080
+
+spring:
+  application:
+    name: api-gateway
+
+  config:
+    import: optional:configserver:http://localhost:8888
+
+  cloud:
+    gateway:
+      # Routes are defined in Java (see config/GatewayConfig.java) so the
+      # custom AuthenticationFilter can be attached to each one explicitly.
+      # This section only holds gateway-wide defaults.
+      discovery:
+        locator:
+          enabled: false   # we don't want auto-routes for every Eureka app name,
+          # only the explicit ones we declared in GatewayConfig
+
+eureka:
+  client:
+    service-url:
+      defaultZone: http://localhost:8761/eureka
+    fetch-registry: true
+    register-with-eureka: true
+  instance:
+    prefer-ip-address: true
+
+app:
+  jwt:
+    secret: ${JWT_SECRET:your_super_secret_jwt_key_at_least_64_chars_long_replace_this_now}
+
+# Resilience4j circuit breakers for downstream calls made through the gateway.
+# Each microservice gets its own instance so one slow/failing service doesn't
+# trip the breaker for the others.
+resilience4j:
+  circuitbreaker:
+    instances:
+      restaurantServiceCB:
+        slidingWindowSize: 10
+        failureRateThreshold: 50
+        waitDurationInOpenState: 10s
+      orderServiceCB:
+        slidingWindowSize: 10
+        failureRateThreshold: 50
+        waitDurationInOpenState: 10s
+      deliveryServiceCB:
+        slidingWindowSize: 10
+        failureRateThreshold: 50
+        waitDurationInOpenState: 10s
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health, info, gateway
+  endpoint:
+    health:
+      show-details: always
+
+logging:
+  level:
+    org.springframework.cloud.gateway: DEBUG

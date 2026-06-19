@@ -1,0 +1,10 @@
+spring:
+  application:
+    name: auth-service
+  config:
+    import: optional:configserver:http://localhost:8888
+
+app:
+  jwt:
+    secret: mi-clave-super-y-extremadamente-secreta-que-nadie-sabe
+    access-token-expiration-ms: 900000

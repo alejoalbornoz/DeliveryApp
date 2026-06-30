@@ -1,4 +1,4 @@
-package model.enums;
+package org.deliveryapp.order_service.model.enums;
 
 public enum OrderStatus {
     PENDING,        // just created, waiting for restaurant confirmation

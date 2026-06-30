@@ -1,8 +1,8 @@
-package service;
+package org.deliveryapp.order_service.service;
 
-import dto.request.OrderRequestDTO;
-import dto.response.OrderResponseDTO;
-import model.enums.OrderStatus;
+import org.deliveryapp.order_service.dto.request.OrderRequestDTO;
+import org.deliveryapp.order_service.dto.response.OrderResponseDTO;
+import org.deliveryapp.order_service.model.enums.OrderStatus;
 
 import java.util.List;
 

@@ -1,4 +1,4 @@
-package org.deliveryapp;
+package org.deliveryapp.restaurant_service;
 
 
 import org.springframework.boot.SpringApplication;

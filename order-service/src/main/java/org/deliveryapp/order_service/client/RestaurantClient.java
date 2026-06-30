@@ -1,8 +1,9 @@
-package client;
+package org.deliveryapp.order_service.client;
 
-import dto.response.MenuItemResponseDTO;
+
 import io.github.resilience4j.circuitbreaker.annotation.CircuitBreaker;
 import io.github.resilience4j.retry.annotation.Retry;
+import org.deliveryapp.order_service.dto.response.MenuItemResponseDTO;
 import org.springframework.cloud.openfeign.FeignClient;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;

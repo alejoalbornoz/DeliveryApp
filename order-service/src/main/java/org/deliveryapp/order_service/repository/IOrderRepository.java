@@ -1,7 +1,7 @@
-package repository;
+package org.deliveryapp.order_service.repository;
 
-import model.Order;
-import model.enums.OrderStatus;
+import org.deliveryapp.order_service.model.Order;
+import org.deliveryapp.order_service.model.enums.OrderStatus;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 

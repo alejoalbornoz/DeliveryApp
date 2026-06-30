@@ -1,4 +1,4 @@
-package org.deliveryapp.dto.request;
+package org.deliveryapp.restaurant_service.dto.request;
 
 import jakarta.validation.constraints.*;
 import lombok.AllArgsConstructor;

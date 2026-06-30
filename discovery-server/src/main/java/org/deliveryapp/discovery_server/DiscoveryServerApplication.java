@@ -1,4 +1,4 @@
-package org.deliveryapp;
+package org.deliveryapp.discovery_server;
 
 
 import org.springframework.boot.SpringApplication;

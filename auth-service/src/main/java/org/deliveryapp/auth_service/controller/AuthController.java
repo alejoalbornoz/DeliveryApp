@@ -1,15 +1,16 @@
-package org.deliveryapp.controller;
+package org.deliveryapp.auth_service.controller;
 
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
-import org.deliveryapp.dto.request.LoginRequestDTO;
-import org.deliveryapp.dto.request.RefreshTokenRequestDTO;
-import org.deliveryapp.dto.request.RegisterRequestDTO;
-import org.deliveryapp.dto.response.AuthResponseDTO;
-import org.deliveryapp.dto.response.TokenRefreshResponseDTO;
-import org.deliveryapp.service.AuthService;
+
+import org.deliveryapp.auth_service.dto.request.LoginRequestDTO;
+import org.deliveryapp.auth_service.dto.request.RefreshTokenRequestDTO;
+import org.deliveryapp.auth_service.dto.request.RegisterRequestDTO;
+import org.deliveryapp.auth_service.dto.response.AuthResponseDTO;
+import org.deliveryapp.auth_service.dto.response.TokenRefreshResponseDTO;
+import org.deliveryapp.auth_service.service.AuthService;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PostMapping;

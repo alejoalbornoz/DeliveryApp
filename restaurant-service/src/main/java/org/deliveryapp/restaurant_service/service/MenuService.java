@@ -1,21 +1,23 @@
-package org.deliveryapp.service;
+package org.deliveryapp.restaurant_service.service;
 
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.deliveryapp.dto.request.MenuItemRequestDTO;
-import org.deliveryapp.dto.response.MenuItemResponseDTO;
-import org.deliveryapp.exception.CategoryNotFoundException;
-import org.deliveryapp.exception.MenuItemNotFoundException;
-import org.deliveryapp.exception.RestaurantNotFoundException;
-import org.deliveryapp.model.Category;
-import org.deliveryapp.model.MenuItem;
-import org.deliveryapp.model.Restaurant;
-import org.deliveryapp.repository.ICategoryRepository;
-import org.deliveryapp.repository.IMenuItemRepository;
-import org.deliveryapp.repository.IRestaurantRepository;
+
+import org.deliveryapp.restaurant_service.exception.MenuItemNotFoundException;
+import org.deliveryapp.restaurant_service.dto.request.MenuItemRequestDTO;
+import org.deliveryapp.restaurant_service.dto.response.MenuItemResponseDTO;
+import org.deliveryapp.restaurant_service.exception.CategoryNotFoundException;
+import org.deliveryapp.restaurant_service.exception.RestaurantNotFoundException;
+import org.deliveryapp.restaurant_service.model.Category;
+import org.deliveryapp.restaurant_service.model.MenuItem;
+import org.deliveryapp.restaurant_service.model.Restaurant;
+import org.deliveryapp.restaurant_service.repository.ICategoryRepository;
+import org.deliveryapp.restaurant_service.repository.IMenuItemRepository;
+import org.deliveryapp.restaurant_service.repository.IRestaurantRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+
 
 import java.util.List;
 

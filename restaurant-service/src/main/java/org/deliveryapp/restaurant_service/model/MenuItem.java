@@ -1,4 +1,4 @@
-package org.deliveryapp.model;
+package org.deliveryapp.restaurant_service.model;
 
 import jakarta.persistence.*;
 import lombok.*;

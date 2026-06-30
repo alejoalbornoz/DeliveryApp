@@ -1,9 +1,10 @@
-package org.deliveryapp.config;
+package org.deliveryapp.auth_service.config;
 
 
 import lombok.RequiredArgsConstructor;
-import org.deliveryapp.security.JwtAuthenticationFilter;
-import org.deliveryapp.security.UserDetailsServiceImpl;
+
+import org.deliveryapp.auth_service.security.JwtAuthenticationFilter;
+import org.deliveryapp.auth_service.security.UserDetailsServiceImpl;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.authentication.AuthenticationManager;

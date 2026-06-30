@@ -1,21 +1,21 @@
-package service;
+package org.deliveryapp.order_service.service;
 
-import client.RestaurantClient;
-import dto.request.OrderItemRequestDTO;
-import dto.request.OrderRequestDTO;
-import dto.response.MenuItemResponseDTO;
-import dto.response.OrderItemResponseDTO;
-import dto.response.OrderResponseDTO;
-import exception.MenuItemUnavailableException;
-import exception.OrderNotFoundException;
+import org.deliveryapp.order_service.client.RestaurantClient;
+import org.deliveryapp.order_service.dto.request.OrderItemRequestDTO;
+import org.deliveryapp.order_service.dto.request.OrderRequestDTO;
+import org.deliveryapp.order_service.dto.response.MenuItemResponseDTO;
+import org.deliveryapp.order_service.dto.response.OrderItemResponseDTO;
+import org.deliveryapp.order_service.dto.response.OrderResponseDTO;
+import org.deliveryapp.order_service.exception.MenuItemUnavailableException;
+import org.deliveryapp.order_service.exception.OrderNotFoundException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import model.Order;
-import model.OrderItem;
-import model.enums.OrderStatus;
+import org.deliveryapp.order_service.model.Order;
+import org.deliveryapp.order_service.model.OrderItem;
+import org.deliveryapp.order_service.model.enums.OrderStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import repository.IOrderRepository;
+import org.deliveryapp.order_service.repository.IOrderRepository;
 
 import java.math.BigDecimal;
 import java.util.List;

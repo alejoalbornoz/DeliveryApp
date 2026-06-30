@@ -1,9 +1,8 @@
-package model;
-
+package org.deliveryapp.order_service.model;
 
 import jakarta.persistence.*;
 import lombok.*;
-import model.enums.OrderStatus;
+import org.deliveryapp.order_service.model.enums.OrderStatus;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;

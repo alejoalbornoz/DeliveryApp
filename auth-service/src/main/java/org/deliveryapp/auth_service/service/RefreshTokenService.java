@@ -1,12 +1,11 @@
-package org.deliveryapp.service;
+package org.deliveryapp.auth_service.service;
 
 
 import lombok.RequiredArgsConstructor;
-import lombok.RequiredArgsConstructor;
-import org.deliveryapp.exception.TokenRefreshException;
-import org.deliveryapp.model.RefreshToken;
-import org.deliveryapp.model.User;
-import org.deliveryapp.repository.IRefreshTokenRepository;
+import org.deliveryapp.auth_service.exception.TokenRefreshException;
+import org.deliveryapp.auth_service.model.RefreshToken;
+import org.deliveryapp.auth_service.model.User;
+import org.deliveryapp.auth_service.repository.IRefreshTokenRepository;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;

@@ -1,4 +1,4 @@
-package org.deliveryapp.dto.request;
+package org.deliveryapp.auth_service.dto.request;
 
 
 import jakarta.validation.constraints.Email;

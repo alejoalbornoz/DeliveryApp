@@ -1,7 +1,8 @@
-package org.deliveryapp.repository;
+package org.deliveryapp.restaurant_service.repository;
 
-import org.deliveryapp.model.Category;
 
+
+import org.deliveryapp.restaurant_service.model.Category;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 import java.util.Optional;

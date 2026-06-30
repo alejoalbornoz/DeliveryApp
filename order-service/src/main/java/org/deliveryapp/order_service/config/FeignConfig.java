@@ -1,4 +1,4 @@
-package config;
+package org.deliveryapp.order_service.config;
 
 import feign.Logger;
 import org.springframework.cloud.openfeign.EnableFeignClients;
@@ -12,7 +12,7 @@ import org.springframework.context.annotation.Configuration;
  * implementations from interfaces at startup.
  */
 @Configuration
-@EnableFeignClients(basePackages = "com.deliveryapp.orderservice.client")
+@EnableFeignClients(basePackages = "org.deliveryapp.order_service.client")
 public class FeignConfig {
 
     @Bean

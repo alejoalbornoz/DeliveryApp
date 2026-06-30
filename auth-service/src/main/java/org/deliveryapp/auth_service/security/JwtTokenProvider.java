@@ -1,4 +1,4 @@
-package org.deliveryapp.security;
+package org.deliveryapp.auth_service.security;
 
 
 import io.jsonwebtoken.JwtException;

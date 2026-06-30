@@ -1,8 +1,9 @@
-package org.deliveryapp.security;
+package org.deliveryapp.auth_service.security;
 
-import org.deliveryapp.model.User;
-import org.deliveryapp.repository.IUserRepository;
+
 import lombok.RequiredArgsConstructor;
+import org.deliveryapp.auth_service.model.User;
+import org.deliveryapp.auth_service.repository.IUserRepository;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;

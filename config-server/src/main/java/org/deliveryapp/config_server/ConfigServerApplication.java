@@ -1,4 +1,4 @@
-package org.deliveryapp;
+package org.deliveryapp.config_server;
 
 
 import org.springframework.boot.SpringApplication;

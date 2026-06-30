@@ -1,7 +1,8 @@
-package org.deliveryapp.config;
+package org.deliveryapp.api_gateway.config;
 
 import lombok.RequiredArgsConstructor;
-import org.deliveryapp.filter.AuthenticationFilter;
+
+import org.deliveryapp.api_gateway.filter.AuthenticationFilter;
 import org.springframework.cloud.gateway.route.RouteLocator;
 import org.springframework.cloud.gateway.route.builder.RouteLocatorBuilder;
 import org.springframework.context.annotation.Bean;

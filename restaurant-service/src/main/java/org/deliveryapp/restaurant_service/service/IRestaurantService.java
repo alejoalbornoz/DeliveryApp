@@ -1,7 +1,9 @@
-package org.deliveryapp.service;
+package org.deliveryapp.restaurant_service.service;
 
-import org.deliveryapp.dto.request.RestaurantRequestDTO;
-import org.deliveryapp.dto.response.RestaurantResponseDTO;
+
+
+import org.deliveryapp.restaurant_service.dto.request.RestaurantRequestDTO;
+import org.deliveryapp.restaurant_service.dto.response.RestaurantResponseDTO;
 
 import java.util.List;
 

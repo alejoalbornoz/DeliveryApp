@@ -1,4 +1,4 @@
-package org.deliveryapp;
+package org.deliveryapp.api_gateway;
 
 
 import org.springframework.boot.SpringApplication;

@@ -1,8 +1,6 @@
-package org.deliveryapp.filter;
+package org.deliveryapp.api_gateway.filter;
 
-
-
-import org.deliveryapp.util.JwtUtil;
+import org.deliveryapp.api_gateway.util.JwtUtil;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.cloud.gateway.filter.GatewayFilter;
 import org.springframework.cloud.gateway.filter.factory.AbstractGatewayFilterFactory;

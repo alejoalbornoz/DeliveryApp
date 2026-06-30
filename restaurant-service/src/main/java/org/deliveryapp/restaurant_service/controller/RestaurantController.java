@@ -1,12 +1,13 @@
-package org.deliveryapp.controller;
+package org.deliveryapp.restaurant_service.controller;
 
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
-import org.deliveryapp.dto.request.RestaurantRequestDTO;
-import org.deliveryapp.dto.response.RestaurantResponseDTO;
-import org.deliveryapp.service.RestaurantService;
+
+import org.deliveryapp.restaurant_service.dto.request.RestaurantRequestDTO;
+import org.deliveryapp.restaurant_service.dto.response.RestaurantResponseDTO;
+import org.deliveryapp.restaurant_service.service.RestaurantService;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;

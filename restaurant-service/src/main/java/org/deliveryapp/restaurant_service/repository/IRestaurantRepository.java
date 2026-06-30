@@ -1,7 +1,8 @@
-package org.deliveryapp.repository;
+package org.deliveryapp.restaurant_service.repository;
 
-import org.deliveryapp.model.Restaurant;
+
 import org.deliveryapp.model.enums.RestaurantStatus;
+import org.deliveryapp.restaurant_service.model.Restaurant;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 import java.util.List;

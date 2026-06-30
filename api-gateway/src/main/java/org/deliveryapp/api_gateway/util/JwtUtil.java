@@ -1,4 +1,4 @@
-package org.deliveryapp.util;
+package org.deliveryapp.api_gateway.util;
 
 import io.jsonwebtoken.JwtException;
 import io.jsonwebtoken.Jwts;

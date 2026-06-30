@@ -1,4 +1,4 @@
-package org.deliveryapp.dto.response;
+package org.deliveryapp.restaurant_service.dto.response;
 
 import org.deliveryapp.model.enums.RestaurantStatus;
 import lombok.AllArgsConstructor;

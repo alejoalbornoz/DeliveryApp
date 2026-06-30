@@ -1,7 +1,8 @@
-package org.deliveryapp.repository;
+package org.deliveryapp.auth_service.repository;
 
-import org.deliveryapp.model.RefreshToken;
-import org.deliveryapp.model.User;
+
+import org.deliveryapp.auth_service.model.RefreshToken;
+import org.deliveryapp.auth_service.model.User;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.stereotype.Repository;

@@ -1,4 +1,4 @@
-package exception;
+package org.deliveryapp.order_service.exception;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.ResponseStatus;

@@ -6,7 +6,7 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
 @Configuration
-@EnableFeignClients(basePackages = "org.deliveryapp.deliveryservice.client")
+@EnableFeignClients(basePackages = "org.deliveryapp.delivery_service.client")
 public class FeignConfig {
 
     @Bean

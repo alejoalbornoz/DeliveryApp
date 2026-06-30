@@ -1,4 +1,4 @@
-package org.deliveryapp.dto.response;
+package org.deliveryapp.restaurant_service.dto.response;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;

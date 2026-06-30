@@ -1,4 +1,4 @@
-package dto.request;
+package org.deliveryapp.order_service.dto.request;
 
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;

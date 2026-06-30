@@ -1,16 +1,18 @@
-package controller;
+package org.deliveryapp.order_service.controller;
 
 import  io.swagger.v3.oas.annotations.Operation;
-import dto.request.OrderRequestDTO;
-import dto.response.OrderResponseDTO;
+
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
-import model.enums.OrderStatus;
+import org.deliveryapp.order_service.dto.request.OrderRequestDTO;
+import org.deliveryapp.order_service.dto.response.OrderResponseDTO;
+import org.deliveryapp.order_service.model.enums.OrderStatus;
+import org.deliveryapp.order_service.service.OrderService;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-import service.OrderService;
+
 
 import java.util.List;
 

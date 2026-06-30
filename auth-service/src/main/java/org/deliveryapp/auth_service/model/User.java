@@ -1,4 +1,4 @@
-package org.deliveryapp.model;
+package org.deliveryapp.auth_service.model;
 
 
 import jakarta.persistence.*;

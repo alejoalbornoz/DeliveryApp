@@ -1,6 +1,7 @@
-package org.deliveryapp.repository;
+package org.deliveryapp.restaurant_service.repository;
 
-import org.deliveryapp.model.MenuItem;
+
+import org.deliveryapp.restaurant_service.model.MenuItem;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 import java.util.List;

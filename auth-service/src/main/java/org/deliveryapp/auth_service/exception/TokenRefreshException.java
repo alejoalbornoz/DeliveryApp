@@ -1,4 +1,4 @@
-package org.deliveryapp.exception;
+package org.deliveryapp.auth_service.exception;
 
 
 import org.springframework.http.HttpStatus;

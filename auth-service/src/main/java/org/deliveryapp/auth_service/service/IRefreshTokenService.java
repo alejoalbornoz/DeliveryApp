@@ -1,7 +1,8 @@
-package org.deliveryapp.service;
+package org.deliveryapp.auth_service.service;
 
-import org.deliveryapp.model.RefreshToken;
-import org.deliveryapp.model.User;
+
+import org.deliveryapp.auth_service.model.RefreshToken;
+import org.deliveryapp.auth_service.model.User;
 
 public interface IRefreshTokenService {
 

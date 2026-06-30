@@ -1,13 +1,15 @@
-package org.deliveryapp.service;
+package org.deliveryapp.restaurant_service.service;
 
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.deliveryapp.repository.IRestaurantRepository;
-import org.deliveryapp.dto.request.RestaurantRequestDTO;
-import org.deliveryapp.dto.response.RestaurantResponseDTO;
-import org.deliveryapp.exception.RestaurantNotFoundException;
-import org.deliveryapp.model.Restaurant;
+
+
+import org.deliveryapp.restaurant_service.dto.request.RestaurantRequestDTO;
+import org.deliveryapp.restaurant_service.dto.response.RestaurantResponseDTO;
+import org.deliveryapp.restaurant_service.exception.RestaurantNotFoundException;
+import org.deliveryapp.restaurant_service.model.Restaurant;
+import org.deliveryapp.restaurant_service.repository.IRestaurantRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 

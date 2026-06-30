@@ -1,10 +1,11 @@
-package org.deliveryapp.service;
+package org.deliveryapp.auth_service.service;
 
-import org.deliveryapp.dto.request.LoginRequestDTO;
-import org.deliveryapp.dto.request.RefreshTokenRequestDTO;
-import org.deliveryapp.dto.request.RegisterRequestDTO;
-import org.deliveryapp.dto.response.AuthResponseDTO;
-import org.deliveryapp.dto.response.TokenRefreshResponseDTO;
+
+import org.deliveryapp.auth_service.dto.request.LoginRequestDTO;
+import org.deliveryapp.auth_service.dto.request.RefreshTokenRequestDTO;
+import org.deliveryapp.auth_service.dto.request.RegisterRequestDTO;
+import org.deliveryapp.auth_service.dto.response.AuthResponseDTO;
+import org.deliveryapp.auth_service.dto.response.TokenRefreshResponseDTO;
 
 public interface IAuthService {
 

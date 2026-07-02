@@ -3,10 +3,12 @@ package org.deliveryapp.delivery_service.repository;
 import org.deliveryapp.delivery_service.model.Driver;
 import org.deliveryapp.delivery_service.model.enums.DriverStatus;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.stereotype.Repository;
 
 import java.util.List;
 import java.util.Optional;
 
+@Repository
 public interface IDriverRepository extends JpaRepository <Driver, Long> {
 
     Optional<Driver> findByUserId(Long userId);

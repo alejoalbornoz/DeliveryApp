@@ -1,4 +1,4 @@
-package com.deliveryapp.notification_service.model.enums;
+package org.deliveryapp.notification_service.model.enums;
 
 public enum NotificationType {
     DRIVER_ASSIGNED,

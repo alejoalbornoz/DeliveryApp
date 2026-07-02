@@ -1,4 +1,4 @@
-package com.deliveryapp.notification_service;
+package org.deliveryapp.notification_service;
 
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;

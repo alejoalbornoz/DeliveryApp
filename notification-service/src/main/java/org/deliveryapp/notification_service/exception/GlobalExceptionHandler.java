@@ -1,4 +1,4 @@
-package com.deliveryapp.notification_service.exception;
+package org.deliveryapp.notification_service.exception;
 
 
 import lombok.extern.slf4j.Slf4j;

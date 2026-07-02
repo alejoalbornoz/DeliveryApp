@@ -1,7 +1,7 @@
-package com.deliveryapp.notification_service.model;
+package org.deliveryapp.notification_service.model;
 
 
-import com.deliveryapp.notification_service.model.enums.NotificationType;
+import org.deliveryapp.notification_service.model.enums.NotificationType;
 import jakarta.persistence.*;
 import lombok.*;
 

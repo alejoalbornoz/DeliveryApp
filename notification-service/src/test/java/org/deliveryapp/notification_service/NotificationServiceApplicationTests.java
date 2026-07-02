@@ -1,4 +1,4 @@
-package com.deliveryapp.notification_service;
+package org.deliveryapp.notification_service;
 
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;

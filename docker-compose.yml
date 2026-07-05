@@ -1,26 +1,17 @@
-version: "3.9"
-
-# ═══════════════════════════════════════════════════
-#  DeliveryApp - Infrastructure Services
-#  Usage: docker compose up -d
-# ═══════════════════════════════════════════════════
-
 services:
-
   # ── PostgreSQL ──────────────────────────────────
   postgres:
     image: postgres:16-alpine
     container_name: deliveryapp-postgres
     restart: unless-stopped
     environment:
-      POSTGRES_USER: delivery_user
-      POSTGRES_PASSWORD: delivery_pass
-      POSTGRES_MULTIPLE_DATABASES: auth_db,restaurant_db,order_db,delivery_db,notification_db
+      POSTGRES_USER: ${POSTGRES_USER:-deliveryapp}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-deliveryapp123}
+      POSTGRES_DB: auth_db
     ports:
       - "5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
-      - ./scripts/init-multiple-databases.sh:/docker-entrypoint-initdb.d/init-multiple-databases.sh
     networks:
       - deliveryapp-network
     healthcheck:
@@ -28,6 +19,28 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
+
+  # Creates the remaining databases once postgres is healthy.
+  # Uses a separate one-shot container to avoid the Windows script-mounting issue.
+  postgres-init:
+    image: postgres:16-alpine
+    container_name: deliveryapp-postgres-init
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      PGPASSWORD: ${POSTGRES_PASSWORD:-deliveryapp123}
+    entrypoint: >
+      sh -c "
+        psql -h postgres -U $${POSTGRES_USER:-deliveryapp} -d auth_db -c 'CREATE DATABASE restaurant_db;' || true &&
+        psql -h postgres -U $${POSTGRES_USER:-deliveryapp} -d auth_db -c 'CREATE DATABASE order_db;' || true &&
+        psql -h postgres -U $${POSTGRES_USER:-deliveryapp} -d auth_db -c 'CREATE DATABASE delivery_db;' || true &&
+        psql -h postgres -U $${POSTGRES_USER:-deliveryapp} -d auth_db -c 'CREATE DATABASE notification_db;' || true &&
+        echo 'All databases created successfully.'
+      "
+    networks:
+      - deliveryapp-network
+    restart: "no"
 
   # ── pgAdmin ──────────────────────────────────────
   pgadmin:
@@ -38,9 +51,9 @@ services:
       postgres:
         condition: service_healthy
     environment:
-      PGADMIN_DEFAULT_EMAIL: admin@deliveryapp.com
-      PGADMIN_DEFAULT_PASSWORD: admin123
-      PGADMIN_CONFIG_SERVER_MODE: "False"   # simpler login, fine for local dev
+      PGADMIN_DEFAULT_EMAIL: ${PGADMIN_DEFAULT_EMAIL:-admin@deliveryapp.com}
+      PGADMIN_DEFAULT_PASSWORD: ${PGADMIN_DEFAULT_PASSWORD:-admin123}
+      PGADMIN_CONFIG_SERVER_MODE: "False"
     ports:
       - "5050:80"
     volumes:
@@ -48,38 +61,10 @@ services:
     networks:
       - deliveryapp-network
 
-  # ── SonarQube (disabled for now, enable once more services exist) ──
-  # sonarqube:
-  #   image: sonarqube:10-community
-  #   container_name: deliveryapp-sonarqube
-  #   restart: unless-stopped
-  #   depends_on:
-  #     postgres:
-  #       condition: service_healthy
-  #   environment:
-  #     SONAR_JDBC_URL: jdbc:postgresql://postgres:5432/sonar_db
-  #     SONAR_JDBC_USERNAME: ${POSTGRES_USER:-deliveryapp}
-  #     SONAR_JDBC_PASSWORD: ${POSTGRES_PASSWORD:-deliveryapp123}
-  #   ports:
-  #     - "9000:9000"
-  #   volumes:
-  #     - sonarqube_data:/opt/sonarqube/data
-  #     - sonarqube_extensions:/opt/sonarqube/extensions
-  #     - sonarqube_logs:/opt/sonarqube/logs
-  #   networks:
-  #     - deliveryapp-network
-  #   ulimits:
-  #     nofile:
-  #       soft: 65536
-  #       hard: 65536
-
 # ═══════════════════════════════════════════════════
 volumes:
   postgres_data:
   pgadmin_data:
-  # sonarqube_data:
-  # sonarqube_extensions:
-  # sonarqube_logs:
 
 networks:
   deliveryapp-network:

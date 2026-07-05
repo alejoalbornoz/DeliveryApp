@@ -7,6 +7,8 @@ import org.deliveryapp.model.enums.Role;
 
 import java.time.LocalDateTime;
 
+@Entity
+@Table(name = "users")
 @Getter
 @Setter
 @NoArgsConstructor

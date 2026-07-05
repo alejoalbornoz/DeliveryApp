@@ -3,6 +3,17 @@ spring:
     name: auth-service
   config:
     import: optional:configserver:http://localhost:8888
+  datasource:
+    url: jdbc:postgresql://localhost:5432/auth_db
+    username: deliveryapp
+    password: deliveryapp123
+    driver-class-name: org.postgresql.Driver
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: true
+  flyway:
+    enabled: false
 
 app:
   jwt:

@@ -15,12 +15,10 @@ spring:
     hibernate:
       ddl-auto: update
     show-sql: false
-    properties:
-      hibernate:
-        format_sql: true
+
 
   flyway:
-    enabled: true
+    enabled: false
     locations: classpath:db/migration
 
 eureka:

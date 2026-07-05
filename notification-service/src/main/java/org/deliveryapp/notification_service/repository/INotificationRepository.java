@@ -12,7 +12,7 @@ public interface INotificationRepository extends JpaRepository <Notification, Lo
 
     List<Notification> findByUserId (Long userId);
 
-    List<Notification> findByUserAndType(Long userId, NotificationType type);
+    List<Notification> findByUserIdAndType(Long userId, NotificationType type);
 
     List<Notification> findBySentFalse();
 

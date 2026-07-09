@@ -9,7 +9,8 @@ import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
-import org.deliveryapp.model.enums.Role;
+import org.deliveryapp.auth_service.model.enums.Role;
+
 
 @Getter
 @Setter

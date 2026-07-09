@@ -9,6 +9,7 @@ import org.deliveryapp.auth_service.model.RefreshToken;
 import org.deliveryapp.auth_service.model.User;
 
 
+import org.deliveryapp.auth_service.model.enums.Role;
 import org.deliveryapp.auth_service.repository.IUserRepository;
 import org.deliveryapp.auth_service.security.JwtTokenProvider;
 import org.junit.jupiter.api.BeforeEach;
@@ -69,7 +70,7 @@ class AuthServiceTest {
                 .name("Juan Test")
                 .email("juan@test.com")
                 .password("hashedPassword")
-                .role(org.deliveryapp.model.enums.Role.ROLE_CUSTOMER)
+                .role(Role.ROLE_CUSTOMER)
                 .enabled(true)
                 .build();
 
@@ -96,7 +97,7 @@ class AuthServiceTest {
     void register_shouldReturnTokens_whenEmailIsNew() {
         // Given
         RegisterRequestDTO request = new RegisterRequestDTO(
-                "Juan Test", "juan@test.com", "password123", org.deliveryapp.model.enums.Role.ROLE_CUSTOMER);
+                "Juan Test", "juan@test.com", "password123", Role.ROLE_CUSTOMER);
 
         when(userRepository.existsByEmail("juan@test.com")).thenReturn(false);
         when(passwordEncoder.encode("password123")).thenReturn("hashedPassword");
@@ -123,7 +124,7 @@ class AuthServiceTest {
     void register_shouldThrow_whenEmailAlreadyExists() {
         // Given
         RegisterRequestDTO request = new RegisterRequestDTO(
-                "Juan Test", "juan@test.com", "password123", org.deliveryapp.model.enums.Role.ROLE_CUSTOMER);
+                "Juan Test", "juan@test.com", "password123", Role.ROLE_CUSTOMER);
 
         when(userRepository.existsByEmail("juan@test.com")).thenReturn(true);
 

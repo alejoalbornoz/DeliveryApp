@@ -3,7 +3,8 @@ package org.deliveryapp.auth_service.model;
 
 import jakarta.persistence.*;
 import lombok.*;
-import org.deliveryapp.model.enums.Role;
+import org.deliveryapp.auth_service.model.enums.Role;
+
 
 import java.time.LocalDateTime;
 

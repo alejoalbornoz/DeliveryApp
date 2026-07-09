@@ -1,4 +1,4 @@
-package org.deliveryapp.model.enums;
+package org.deliveryapp.auth_service.model.enums;
 
 public enum Role {
     ROLE_CUSTOMER,

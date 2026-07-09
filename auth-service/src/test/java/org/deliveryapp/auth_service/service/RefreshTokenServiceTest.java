@@ -4,6 +4,7 @@ import org.deliveryapp.auth_service.exception.TokenRefreshException;
 import org.deliveryapp.auth_service.model.RefreshToken;
 import org.deliveryapp.auth_service.model.User;
 
+import org.deliveryapp.auth_service.model.enums.Role;
 import org.deliveryapp.auth_service.repository.IRefreshTokenRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -43,7 +44,7 @@ class RefreshTokenServiceTest {
                 .id(1L)
                 .name("Juan Test")
                 .email("juan@test.com")
-                .role(org.deliveryapp.model.enums.Role.ROLE_CUSTOMER)
+                .role(Role.ROLE_CUSTOMER)
                 .enabled(true)
                 .build();
     }

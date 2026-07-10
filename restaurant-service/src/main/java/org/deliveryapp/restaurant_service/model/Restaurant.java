@@ -2,7 +2,8 @@ package org.deliveryapp.restaurant_service.model;
 
 import jakarta.persistence.*;
 import lombok.*;
-import org.deliveryapp.model.enums.RestaurantStatus;
+import org.deliveryapp.restaurant_service.model.enums.RestaurantStatus;
+
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;

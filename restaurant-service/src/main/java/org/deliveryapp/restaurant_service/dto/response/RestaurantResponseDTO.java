@@ -1,10 +1,11 @@
 package org.deliveryapp.restaurant_service.dto.response;
 
-import org.deliveryapp.model.enums.RestaurantStatus;
+
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+import org.deliveryapp.restaurant_service.model.enums.RestaurantStatus;
 
 @Getter
 @NoArgsConstructor

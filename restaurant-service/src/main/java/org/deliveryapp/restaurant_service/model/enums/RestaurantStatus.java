@@ -1,4 +1,4 @@
-package org.deliveryapp.model.enums;
+package org.deliveryapp.restaurant_service.model.enums;
 
 public enum RestaurantStatus {
     OPEN,

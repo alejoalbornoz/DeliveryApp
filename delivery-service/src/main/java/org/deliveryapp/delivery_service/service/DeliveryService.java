@@ -7,6 +7,8 @@ import org.deliveryapp.delivery_service.client.NotificationClient;
 import org.deliveryapp.delivery_service.dto.request.DeliveryRequestDTO;
 import org.deliveryapp.delivery_service.dto.request.NotificationRequestDTO;
 import org.deliveryapp.delivery_service.dto.response.DeliveryResponseDTO;
+import org.deliveryapp.delivery_service.event.DeliveryEventProducer;
+import org.deliveryapp.delivery_service.event.DeliveryStatusEvent;
 import org.deliveryapp.delivery_service.exception.DeliveryNotFoundException;
 import org.deliveryapp.delivery_service.exception.NoAvailableDriverException;
 import org.deliveryapp.delivery_service.model.Delivery;
@@ -26,6 +28,8 @@ public class DeliveryService implements IDeliveryService{
     private final IDeliveryRepository deliveryRepository;
     private final IDriverRepository driverRepository;
     private final NotificationClient notificationClient;
+    private final DeliveryEventProducer deliveryEventProducer;
+
 
     @Override
     @Transactional
@@ -70,11 +74,15 @@ public class DeliveryService implements IDeliveryService{
         log.info("Driver assigned: deliveryId={}, driverId={}", updated.getId(), driver.getId());
 
         // Best-effort notification — failure here must NOT roll back the assignment.
-        notificationClient.sendNotification(NotificationRequestDTO.builder()
-                .userId(driver.getUserId())
-                .type("DRIVER_ASSIGNED")
-                .message("You've been assigned a new delivery: #" + delivery.getOrderId())
-                .build());
+        deliveryEventProducer.publishDeliveryStatus(
+                DeliveryStatusEvent.builder()
+                        .orderId(delivery.getOrderId())
+                        .userId(driver.getUserId())
+                        .status("DRIVER_ASSIGNED")
+                        .message("You've been assigned delivery #" + delivery.getOrderId())
+                        .build()
+        );
+
 
         return toResponse(updated);
     }
@@ -89,15 +97,19 @@ public class DeliveryService implements IDeliveryService{
         // Free up the driver once the delivery reaches a terminal state
         if ((newStatus == DeliveryStatus.DELIVERED || newStatus == DeliveryStatus.FAILED)
                 && updated.getDriver() != null) {
+
             Driver driver = updated.getDriver();
             driver.setStatus(DriverStatus.AVAILABLE);
             driverRepository.save(driver);
 
-            notificationClient.sendNotification(NotificationRequestDTO.builder()
-                    .userId(driver.getUserId())
-                    .type("ORDER_" + newStatus.name())
-                    .message("Your order #" + delivery.getOrderId() + " status: " + newStatus)
-                    .build());
+            deliveryEventProducer.publishDeliveryStatus(
+                    DeliveryStatusEvent.builder()
+                            .orderId(delivery.getOrderId())
+                            .userId(driver.getUserId())
+                            .status("ORDER_" + newStatus.name())
+                            .message("Your order #" + delivery.getOrderId() + " status: " + newStatus)
+                            .build()
+            );
         }
 
         log.info("Delivery status updated: id={}, status={}", updated.getId(), newStatus);

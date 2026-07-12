@@ -38,7 +38,7 @@
 
         <spring-cloud.version>2025.0.0</spring-cloud.version>
 
-        <spring-kafka.version>3.7.0</spring-kafka.version>
+        <spring-kafka.version>3.3.7</spring-kafka.version>
 
         <jjwt.version>0.12.6</jjwt.version>
 

@@ -6,6 +6,8 @@ import org.deliveryapp.order_service.dto.request.OrderRequestDTO;
 import org.deliveryapp.order_service.dto.response.MenuItemResponseDTO;
 import org.deliveryapp.order_service.dto.response.OrderItemResponseDTO;
 import org.deliveryapp.order_service.dto.response.OrderResponseDTO;
+import org.deliveryapp.order_service.event.OrderConfirmedEvent;
+import org.deliveryapp.order_service.event.OrderEventProducer;
 import org.deliveryapp.order_service.exception.MenuItemUnavailableException;
 import org.deliveryapp.order_service.exception.OrderNotFoundException;
 import lombok.RequiredArgsConstructor;
@@ -18,6 +20,7 @@ import org.springframework.transaction.annotation.Transactional;
 import org.deliveryapp.order_service.repository.IOrderRepository;
 
 import java.math.BigDecimal;
+import java.time.LocalDateTime;
 import java.util.List;
 
 @Slf4j
@@ -28,6 +31,7 @@ public class OrderService implements IOrderService{
 
     private final IOrderRepository orderRepository;
     private final RestaurantClient restaurantClient;
+    private final OrderEventProducer orderEventProducer;
 
     @Override
     @Transactional
@@ -89,6 +93,22 @@ public class OrderService implements IOrderService{
         Order order = findOrderOrThrow(id);
         order.setStatus(newStatus);
         Order updated = orderRepository.save(order);
+
+        // Publish event when order is confirmed so delivery-service
+        // can pick it up and create a delivery record
+        if (newStatus == OrderStatus.CONFIRMED) {
+            orderEventProducer.publishOrderConfirmed(
+                    OrderConfirmedEvent.builder()
+                            .orderId(updated.getId())
+                            .userId(updated.getUserId())
+                            .restaurantId(updated.getRestaurantId())
+                            .deliveryAddress(updated.getDeliveryAddress())
+                            .totalAmount(updated.getTotalAmount())
+                            .confirmedAt(LocalDateTime.now())
+                            .build()
+            );
+        }
+
         log.info("Order status updated: id={}, status={}", updated.getId(), newStatus);
         return toResponse(updated);
     }

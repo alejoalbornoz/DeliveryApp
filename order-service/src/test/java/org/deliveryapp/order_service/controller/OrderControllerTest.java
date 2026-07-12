@@ -30,7 +30,6 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 @AutoConfigureMockMvc(addFilters = false)
 @WebMvcTest(OrderController.class)
-@Import(OrderController.class)
 @DisplayName("OrderController Unit Tests")
 class OrderControllerTest {
 

@@ -5,9 +5,6 @@
          https://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
 
-    <!-- ═══════════════════════════════════════════════════════════
-         PARENT - Spring Boot BOM
-    ═══════════════════════════════════════════════════════════ -->
     <parent>
         <groupId>org.springframework.boot</groupId>
         <artifactId>spring-boot-starter-parent</artifactId>
@@ -15,9 +12,6 @@
         <relativePath/>
     </parent>
 
-    <!-- ═══════════════════════════════════════════════════════════
-         PROJECT COORDINATES
-    ═══════════════════════════════════════════════════════════ -->
     <groupId>org.deliveryapp</groupId>
     <artifactId>delivery-app</artifactId>
     <version>1.0.0-SNAPSHOT</version>
@@ -25,9 +19,6 @@
     <name>DeliveryApp :: Parent</name>
     <description>PedidosYa Clone - Microservices Backend</description>
 
-    <!-- ═══════════════════════════════════════════════════════════
-         MODULES
-    ═══════════════════════════════════════════════════════════ -->
     <modules>
         <module>config-server</module>
         <module>discovery-server</module>
@@ -39,51 +30,38 @@
         <module>notification-service</module>
     </modules>
 
-    <!-- ═══════════════════════════════════════════════════════════
-         GLOBAL PROPERTIES
-    ═══════════════════════════════════════════════════════════ -->
     <properties>
         <java.version>17</java.version>
         <maven.compiler.source>17</maven.compiler.source>
         <maven.compiler.target>17</maven.compiler.target>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
 
-        <!-- Spring Cloud -->
         <spring-cloud.version>2025.0.0</spring-cloud.version>
 
-        <!-- Security -->
+        <spring-kafka.version>3.7.0</spring-kafka.version>
+
         <jjwt.version>0.12.6</jjwt.version>
 
-        <!-- Resilience -->
         <resilience4j.version>2.2.0</resilience4j.version>
 
-        <!-- Documentation -->
         <springdoc.version>2.6.0</springdoc.version>
 
-        <!-- Mapping -->
         <mapstruct.version>1.6.3</mapstruct.version>
 
-        <!-- Testing -->
         <testcontainers.version>1.20.4</testcontainers.version>
 
-        <!-- Quality -->
         <sonar.maven.plugin.version>4.0.0.4121</sonar.maven.plugin.version>
         <jacoco.version>0.8.12</jacoco.version>
 
-        <!-- Sonar properties (override in CI/CD) -->
         <sonar.host.url>http://localhost:9000</sonar.host.url>
         <sonar.coverage.jacoco.xmlReportPaths>
             ${project.build.directory}/site/jacoco/jacoco.xml
         </sonar.coverage.jacoco.xmlReportPaths>
     </properties>
 
-    <!-- ═══════════════════════════════════════════════════════════
-         DEPENDENCY MANAGEMENT  (BOM - versions only, no scope)
-    ═══════════════════════════════════════════════════════════ -->
     <dependencyManagement>
         <dependencies>
 
-            <!-- Spring Cloud BOM -->
             <dependency>
                 <groupId>org.springframework.cloud</groupId>
                 <artifactId>spring-cloud-dependencies</artifactId>
@@ -92,7 +70,6 @@
                 <scope>import</scope>
             </dependency>
 
-            <!-- ─── JWT (JJWT) ─── -->
             <dependency>
                 <groupId>io.jsonwebtoken</groupId>
                 <artifactId>jjwt-api</artifactId>
@@ -109,7 +86,6 @@
                 <version>${jjwt.version}</version>
             </dependency>
 
-            <!-- ─── Resilience4j ─── -->
             <dependency>
                 <groupId>io.github.resilience4j</groupId>
                 <artifactId>resilience4j-spring-boot3</artifactId>
@@ -121,7 +97,6 @@
                 <version>${resilience4j.version}</version>
             </dependency>
 
-            <!-- ─── SpringDoc / Swagger ─── -->
             <dependency>
                 <groupId>org.springdoc</groupId>
                 <artifactId>springdoc-openapi-starter-webmvc-ui</artifactId>
@@ -133,7 +108,6 @@
                 <version>${springdoc.version}</version>
             </dependency>
 
-            <!-- ─── MapStruct ─── -->
             <dependency>
                 <groupId>org.mapstruct</groupId>
                 <artifactId>mapstruct</artifactId>
@@ -146,7 +120,6 @@
                 <scope>provided</scope>
             </dependency>
 
-            <!-- ─── Testcontainers BOM ─── -->
             <dependency>
                 <groupId>org.testcontainers</groupId>
                 <artifactId>testcontainers-bom</artifactId>
@@ -155,35 +128,34 @@
                 <scope>import</scope>
             </dependency>
 
+           <dependency>
+                <groupId>org.springframework.kafka</groupId>
+                <artifactId>spring-kafka</artifactId>
+                <version>${spring-kafka.version}</version>
+            </dependency>
+
         </dependencies>
     </dependencyManagement>
 
-    <!-- ═══════════════════════════════════════════════════════════
-         SHARED DEPENDENCIES  (inherited by all child modules)
-    ═══════════════════════════════════════════════════════════ -->
     <dependencies>
 
-        <!-- Lombok -->
         <dependency>
             <groupId>org.projectlombok</groupId>
             <artifactId>lombok</artifactId>
             <optional>true</optional>
         </dependency>
 
-        <!-- Spring Boot Test (JUnit 5 + Mockito included) -->
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-test</artifactId>
             <scope>test</scope>
         </dependency>
 
-        <!-- Actuator (health checks for all services) -->
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-actuator</artifactId>
         </dependency>
 
-        <!-- Validation -->
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-validation</artifactId>
@@ -191,14 +163,10 @@
 
     </dependencies>
 
-    <!-- ═══════════════════════════════════════════════════════════
-         BUILD PLUGINS
-    ═══════════════════════════════════════════════════════════ -->
     <build>
         <pluginManagement>
             <plugins>
 
-                <!-- Spring Boot Maven Plugin -->
                 <plugin>
                     <groupId>org.springframework.boot</groupId>
                     <artifactId>spring-boot-maven-plugin</artifactId>
@@ -212,7 +180,6 @@
                     </configuration>
                 </plugin>
 
-                <!-- Maven Compiler Plugin (MapStruct + Lombok) -->
                 <plugin>
                     <groupId>org.apache.maven.plugins</groupId>
                     <artifactId>maven-compiler-plugin</artifactId>
@@ -233,7 +200,6 @@
                     </configuration>
                 </plugin>
 
-                <!-- JaCoCo - Code Coverage -->
                 <plugin>
                     <groupId>org.jacoco</groupId>
                     <artifactId>jacoco-maven-plugin</artifactId>
@@ -274,14 +240,12 @@
                     </executions>
                 </plugin>
 
-                <!-- SonarQube -->
                 <plugin>
                     <groupId>org.sonarsource.scanner.maven</groupId>
                     <artifactId>sonar-maven-plugin</artifactId>
                     <version>${sonar.maven.plugin.version}</version>
                 </plugin>
 
-                <!-- Maven Surefire (JUnit 5 runner) -->
                 <plugin>
                     <groupId>org.apache.maven.plugins</groupId>
                     <artifactId>maven-surefire-plugin</artifactId>
@@ -296,7 +260,6 @@
             </plugins>
         </pluginManagement>
 
-        <!-- Apply JaCoCo to every module -->
         <plugins>
             <plugin>
                 <groupId>org.jacoco</groupId>

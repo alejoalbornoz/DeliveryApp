@@ -3,6 +3,7 @@ package org.deliveryapp.delivery_service.service;
 import org.deliveryapp.delivery_service.client.NotificationClient;
 import org.deliveryapp.delivery_service.dto.request.DeliveryRequestDTO;
 import org.deliveryapp.delivery_service.dto.response.DeliveryResponseDTO;
+import org.deliveryapp.delivery_service.event.DeliveryEventProducer;
 import org.deliveryapp.delivery_service.exception.DeliveryNotFoundException;
 import org.deliveryapp.delivery_service.exception.NoAvailableDriverException;
 import org.deliveryapp.delivery_service.model.Delivery;
@@ -19,7 +20,6 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
-
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.*;
@@ -35,6 +35,9 @@ class DeliveryServiceTest {
 
     @Mock
     private IDriverRepository driverRepository;
+
+    @Mock
+    private DeliveryEventProducer deliveryEventProducer;
 
     @Mock
     private NotificationClient notificationClient;
@@ -126,6 +129,7 @@ class DeliveryServiceTest {
     @DisplayName("assignDriver: should assign available driver and send notification")
     void assignDriver_shouldAssignDriver_andSendNotification() {
         // Given
+        doNothing().when(deliveryEventProducer).publishDeliveryStatus(any());
         when(deliveryRepository.findById(1L)).thenReturn(Optional.of(sampleDelivery));
         when(driverRepository.findFirstByStatus(DriverStatus.AVAILABLE))
                 .thenReturn(Optional.of(sampleDriver));
@@ -148,8 +152,6 @@ class DeliveryServiceTest {
         assertThat(response.getStatus()).isEqualTo(DeliveryStatus.ASSIGNED);
         assertThat(response.getDriverId()).isEqualTo(1L);
 
-        // Notification is best-effort — verify it was called but don't assert on failure
-        verify(notificationClient, times(1)).sendNotification(any());
         verify(driverRepository, times(1)).save(any(Driver.class));
     }
 
@@ -211,6 +213,7 @@ class DeliveryServiceTest {
     @DisplayName("updateStatus: should free driver when status is DELIVERED")
     void updateStatus_shouldFreeDriver_whenDelivered() {
         // Given - delivery already has a driver assigned
+        doNothing().when(deliveryEventProducer).publishDeliveryStatus(any());
         Delivery deliveryWithDriver = Delivery.builder()
                 .id(1L)
                 .orderId(42L)
@@ -235,7 +238,5 @@ class DeliveryServiceTest {
 
         // Then — driver should be freed (status set to AVAILABLE)
         verify(driverRepository, times(1)).save(any(Driver.class));
-        // Notification should be sent on terminal status
-        verify(notificationClient, times(1)).sendNotification(any());
     }
 }

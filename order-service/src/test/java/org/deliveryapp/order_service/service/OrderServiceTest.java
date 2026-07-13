@@ -185,6 +185,9 @@ class OrderServiceTest {
         when(orderRepository.findById(1L)).thenReturn(Optional.of(sampleOrder));
         when(orderRepository.save(any(Order.class))).thenReturn(confirmed);
 
+
+        doNothing().when(orderEventProducer).publishOrderConfirmed(any());
+
         // When
         OrderResponseDTO response = orderService.updateStatus(1L, OrderStatus.CONFIRMED);
 

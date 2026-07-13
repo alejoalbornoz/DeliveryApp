@@ -1,6 +1,6 @@
 # 🛵 DeliveryApp — Backend
 
-A microservices backend inspired by PedidosYa, built with Spring Boot and Spring Cloud. Covers the full delivery lifecycle: user authentication, restaurant catalog, order placement, driver assignment, and notifications — each as an independent deployable service.
+A microservices backend inspired by PedidosYa, built with Spring Boot and Spring Cloud. Covers the full delivery lifecycle: user authentication, restaurant catalog, order placement, driver assignment, and notifications — each as an independent deployable service communicating via REST (Feign) and asynchronous events (Kafka).
 
 ---
 
@@ -9,7 +9,7 @@ A microservices backend inspired by PedidosYa, built with Spring Boot and Spring
 | Technology | Purpose |
 |---|---|
 | Java 17 | Core language |
-| Spring Boot 4.0.6 | Application framework |
+| Spring Boot 3.5.4 | Application framework |
 | Spring Cloud 2025.0.0 | Microservices infrastructure |
 | Spring Cloud Gateway | API Gateway (reactive/WebFlux) |
 | Spring Cloud Netflix Eureka | Service discovery and registration |
@@ -20,13 +20,13 @@ A microservices backend inspired by PedidosYa, built with Spring Boot and Spring
 | Spring Data JPA + Hibernate | ORM and database access |
 | PostgreSQL 16 | Relational database (one DB per service) |
 | Flyway | Database migrations |
+| Apache Kafka | Asynchronous event-driven communication |
 | SpringDoc / Swagger UI | API documentation |
-| MapStruct | DTO mapping |
 | Lombok | Boilerplate reduction |
-| Docker + Docker Compose | PostgreSQL and pgAdmin containers |
+| Docker + Docker Compose | PostgreSQL, pgAdmin, Kafka, Zookeeper and Kafka UI |
 | JUnit 5 + Mockito | Unit testing |
-| Testcontainers | Integration testing with real PostgreSQL |
 | Maven | Dependency management and build |
+| GitHub Actions | CI/CD pipeline (build, test, release) |
 
 ---
 
@@ -37,26 +37,33 @@ Client (Postman / Frontend)
            ↓
       API Gateway :8080
            ↓  validates JWT, routes by path prefix
-─────────────────────────────────────────────────────
-         Eureka Discovery Server :8761
-─────────────────────────────────────────────────────
-    ↓           ↓           ↓            ↓
-auth-service  restaurant  order-service  delivery-service
-  :8081       -service      :8083           :8084
-              :8082           ↓               ↓
-                        (Feign →        (Feign →
-                        restaurant)     notification)
-                                            ↓
-                                  notification-service
-                                        :8085
-─────────────────────────────────────────────────────
-         Config Server :8888
-         (serves application.yml to every service)
+─────────────────────────────────────────────────────────────
+              Eureka Discovery Server :8761
+─────────────────────────────────────────────────────────────
+    ↓              ↓              ↓               ↓
+auth-service  restaurant-   order-service   delivery-service
+  :8081        service         :8083             :8084
+               :8082             │                  │
+                           Feign →            Kafka →
+                           restaurant    [delivery-status]
+                                │                  │
+                         Kafka →          notification-service
+                       [order-confirmed]       :8085
+                                │
+                         delivery-service
+                           (consumer)
+─────────────────────────────────────────────────────────────
+              Config Server :8888
+       (serves application.yml to every service)
 ```
 
 ### Inter-service communication
 
-`order-service` calls `restaurant-service` via OpenFeign to validate menu items at order creation time. `delivery-service` calls `notification-service` via OpenFeign on driver assignment and delivery status changes. Both Feign clients are protected by Resilience4j circuit breakers and retry policies.
+Two communication patterns coexist depending on whether the call needs an immediate response:
+
+**Synchronous (OpenFeign):** `order-service` calls `restaurant-service` to validate menu items at order creation time. A response is required before the order can be saved.
+
+**Asynchronous (Kafka):** When an order is confirmed, `order-service` publishes an `ORDER_CONFIRMED` event. `delivery-service` consumes it and creates a delivery record independently, then publishes `DRIVER_ASSIGNED` / `ORDER_DELIVERED` events that `notification-service` consumes to send notifications. No service blocks waiting on another.
 
 ---
 
@@ -64,16 +71,18 @@ auth-service  restaurant  order-service  delivery-service
 
 ```
 delivery-app/
-├── pom.xml                          ← Parent POM (BOM — manages versions for all modules)
-├── docker-compose.yml               ← PostgreSQL + pgAdmin
+├── pom.xml                           ← Parent POM (BOM — manages versions for all modules)
+├── docker-compose.yml                ← PostgreSQL, pgAdmin, Kafka, Zookeeper, Kafka UI
 ├── .env.example
-├── scripts/
-│   └── init-multiple-databases.sh   ← Creates one DB per service on first run
+├── .github/
+│   └── workflows/
+│       ├── ci.yml                    ← Build and test on every push/PR
+│       └── release.yml               ← Release pipeline
 │
-├── config-server/                   ← Spring Cloud Config Server (port 8888)
+├── config-server/                    ← Spring Cloud Config Server (port 8888)
 │   └── src/main/resources/
 │       ├── application.yml
-│       └── config/                  ← One .yml file per downstream service
+│       └── config/
 │           ├── discovery-server.yml
 │           ├── api-gateway.yml
 │           ├── auth-service.yml
@@ -82,66 +91,61 @@ delivery-app/
 │           ├── delivery-service.yml
 │           └── notification-service.yml
 │
-├── discovery-server/                ← Eureka Server (port 8761)
+├── discovery-server/                 ← Eureka Server (port 8761)
 │
-├── api-gateway/                     ← Spring Cloud Gateway (port 8080)
+├── api-gateway/                      ← Spring Cloud Gateway (port 8080)
 │   └── src/main/java/.../
 │       ├── filter/
-│       │   ├── AuthenticationFilter.java   ← JWT validation before routing
-│       │   └── RouteValidator.java         ← Public vs secured routes
+│       │   ├── AuthenticationFilter.java
+│       │   └── RouteValidator.java
 │       ├── util/JwtUtil.java
-│       └── config/GatewayConfig.java       ← Route definitions (lb:// via Eureka)
+│       └── config/GatewayConfig.java
 │
-├── auth-service/                    ← Authentication + Users (port 8081)
+├── auth-service/                     ← Authentication + Users (port 8081)
 │   └── src/main/java/.../
 │       ├── controller/AuthController.java
-│       ├── service/
-│       │   ├── AuthService.java / AuthServiceImpl.java
-│       │   └── RefreshTokenService.java / RefreshTokenServiceImpl.java
+│       ├── service/AuthService.java / AuthServiceImpl.java
+│       ├── service/RefreshTokenService.java / RefreshTokenServiceImpl.java
 │       ├── model/User.java, RefreshToken.java
-│       ├── repository/UserRepository.java, RefreshTokenRepository.java
-│       ├── dto/request/ + dto/response/
-│       ├── security/
-│       │   ├── JwtTokenProvider.java
-│       │   ├── JwtAuthenticationFilter.java
-│       │   └── UserDetailsServiceImpl.java
+│       ├── security/JwtTokenProvider.java, JwtAuthenticationFilter.java
 │       └── config/SecurityConfig.java
 │
-├── restaurant-service/              ← Restaurants + Menu Catalog (port 8082)
+├── restaurant-service/               ← Restaurants + Menu Catalog (port 8082)
 │   └── src/main/java/.../
 │       ├── controller/RestaurantController.java, MenuController.java
 │       ├── service/RestaurantService.java/.Impl, MenuService.java/.Impl
-│       ├── model/Restaurant.java, MenuItem.java, Category.java
-│       └── repository/ + dto/
+│       └── model/Restaurant.java, MenuItem.java, Category.java
 │
-├── order-service/                   ← Orders / Pedidos (port 8083)
+├── order-service/                    ← Orders (port 8083)
 │   └── src/main/java/.../
 │       ├── controller/OrderController.java
 │       ├── service/OrderService.java / OrderServiceImpl.java
-│       ├── client/RestaurantClient.java    ← @FeignClient + @CircuitBreaker
-│       ├── model/Order.java, OrderItem.java
-│       └── repository/ + dto/
+│       ├── client/RestaurantClient.java     ← Feign + CircuitBreaker
+│       ├── event/OrderConfirmedEvent.java
+│       └── event/OrderEventProducer.java    ← Kafka producer
 │
-├── delivery-service/                ← Deliveries + Drivers (port 8084)
+├── delivery-service/                 ← Deliveries + Drivers (port 8084)
 │   └── src/main/java/.../
 │       ├── controller/DeliveryController.java
 │       ├── service/DeliveryService.java / DeliveryServiceImpl.java
-│       ├── client/NotificationClient.java  ← @FeignClient + @CircuitBreaker
-│       ├── model/Delivery.java, Driver.java
-│       └── repository/ + dto/
+│       ├── event/OrderConfirmedEvent.java
+│       ├── event/DeliveryStatusEvent.java
+│       ├── event/DeliveryEventConsumer.java ← Kafka consumer
+│       └── event/DeliveryEventProducer.java ← Kafka producer
 │
-└── notification-service/            ← Notifications (port 8085)
+└── notification-service/             ← Notifications (port 8085)
     └── src/main/java/.../
         ├── controller/NotificationController.java
         ├── service/NotificationService.java / NotificationServiceImpl.java
-        └── model/Notification.java
+        ├── event/DeliveryStatusEvent.java
+        └── event/NotificationEventConsumer.java ← Kafka consumer
 ```
 
 ---
 
 ## ⚙️ Configuration
 
-Every service reads its configuration from Config Server at startup. The only thing each service's local `application.yml` contains is its name and where to find Config Server:
+Every service reads its configuration from Config Server at startup. Each service's local `application.yml` contains only its name and where to find Config Server:
 
 ```yaml
 spring:
@@ -151,7 +155,7 @@ spring:
     import: optional:configserver:http://localhost:8888
 ```
 
-The actual configuration (database URL, JWT secret, Eureka address, Resilience4j settings) lives in `config-server/src/main/resources/config/<service-name>.yml`.
+All other configuration (database URL, JWT secret, Kafka brokers, Resilience4j settings) lives in `config-server/src/main/resources/config/<service-name>.yml`.
 
 ### Environment variables
 
@@ -187,7 +191,7 @@ cp .env.example .env
 docker compose up -d
 ```
 
-This starts PostgreSQL (port 5432) and pgAdmin (port 5050). The init script creates one database per service automatically:
+This starts PostgreSQL, pgAdmin, Zookeeper, Kafka and Kafka UI. The init container also creates one database per service automatically:
 
 ```
 auth_db  /  restaurant_db  /  order_db  /  delivery_db  /  notification_db
@@ -223,7 +227,7 @@ cd delivery-service && mvn spring-boot:run
 cd notification-service && mvn spring-boot:run
 ```
 
-> ⚠️ Config Server must be running before any other service starts. Discovery Server must be running before the Gateway and business services register.
+> ⚠️ Config Server must be running before any other service. Kafka warnings in delivery-service and notification-service logs are normal until the Kafka container is fully healthy — the consumers reconnect automatically.
 
 ### Stop containers
 
@@ -242,7 +246,7 @@ docker compose down -v
 
 ## 🗄️ Database
 
-Each microservice owns its own PostgreSQL database — they never share tables or join across databases. Cross-service data is referenced by ID only, and fetched via Feign calls when needed.
+Each microservice owns its own PostgreSQL database. No shared tables, no cross-database joins. Cross-service data is referenced by ID only.
 
 | Service | Database |
 |---|---|
@@ -252,8 +256,6 @@ Each microservice owns its own PostgreSQL database — they never share tables o
 | delivery-service | delivery_db |
 | notification-service | notification_db |
 
-Flyway runs automatically on startup and applies migrations from `src/main/resources/db/migration/`.
-
 Access pgAdmin at `http://localhost:5050`
 
 | Field | Value |
@@ -262,6 +264,37 @@ Access pgAdmin at `http://localhost:5050`
 | Password | admin123 (or your .env value) |
 | PostgreSQL host | `postgres` (Docker service name, not localhost) |
 | Port | 5432 |
+
+---
+
+## 📨 Kafka Event Flow
+
+```
+PATCH /api/v1/orders/{id}/status?status=CONFIRMED
+        ↓
+  order-service saves status change
+        ↓
+  publishes ──► [order-confirmed] ──► Kafka
+                                          ↓
+                              delivery-service consumer
+                                          ↓
+                              creates delivery record in DB
+                                          ↓
+                              publishes ──► [delivery-status] ──► Kafka
+                                                                      ↓
+                                                        notification-service consumer
+                                                                      ↓
+                                                        persists and sends notification
+```
+
+### Kafka Topics
+
+| Topic | Producer | Consumer | Trigger |
+|---|---|---|---|
+| `order-confirmed` | order-service | delivery-service | Order status → CONFIRMED |
+| `delivery-status` | delivery-service | notification-service | Driver assigned or delivery completed |
+
+Access Kafka UI at `http://localhost:8090` to inspect topics, messages and consumer groups in real time.
 
 ---
 
@@ -275,15 +308,11 @@ GET  /api/v1/orders         →  Authorization: Bearer <accessToken>
                                API Gateway validates JWT → forwards to order-service
                                Downstream services trust X-Auth-User header
 
-POST /api/v1/auth/refresh   →  body: { refreshToken }
-                           →   200 { new accessToken, new refreshToken }
-
+POST /api/v1/auth/refresh   →  body: { refreshToken }  →  200 { new tokens }
 POST /api/v1/auth/logout    →  body: { refreshToken }  →  204
 ```
 
-Access tokens expire in 15 minutes. Refresh tokens expire in 7 days and are rotated on every use (each refresh call invalidates the old token and issues a new one).
-
-The API Gateway validates the JWT before forwarding any secured request. If valid, it injects the resolved username as an `X-Auth-User` header so downstream services don't need to re-parse the token.
+Access tokens expire in 15 minutes. Refresh tokens expire in 7 days and rotate on every use.
 
 ### User Roles
 
@@ -335,17 +364,17 @@ All requests go through the API Gateway at `http://localhost:8080`.
 
 | Method | Endpoint | Auth | Description |
 |---|---|---|---|
-| `POST` | `/api/v1/orders` | 🔒 | Create an order (validates items against restaurant-service) |
+| `POST` | `/api/v1/orders` | 🔒 | Create an order (validates items via Feign) |
 | `GET` | `/api/v1/orders/{id}` | 🔒 | Get order by ID |
 | `GET` | `/api/v1/orders/user/{userId}` | 🔒 | List orders by user |
-| `PATCH` | `/api/v1/orders/{id}/status` | 🔒 | Update order status |
+| `PATCH` | `/api/v1/orders/{id}/status` | 🔒 | Update order status (triggers Kafka event on CONFIRMED) |
 | `PATCH` | `/api/v1/orders/{id}/cancel` | 🔒 | Cancel an order |
 
 ### Delivery (`/api/v1/delivery`)
 
 | Method | Endpoint | Auth | Description |
 |---|---|---|---|
-| `POST` | `/api/v1/delivery` | 🔒 | Create a delivery record for an order |
+| `POST` | `/api/v1/delivery` | 🔒 | Create a delivery record |
 | `GET` | `/api/v1/delivery/{id}` | 🔒 | Get delivery by ID |
 | `GET` | `/api/v1/delivery/order/{orderId}` | 🔒 | Get delivery by order |
 | `PATCH` | `/api/v1/delivery/{id}/assign` | 🔒 | Assign next available driver |
@@ -355,34 +384,40 @@ All requests go through the API Gateway at `http://localhost:8080`.
 
 | Method | Endpoint | Auth | Description |
 |---|---|---|---|
-| `POST` | `/api/v1/notifications` | 🔒 | Send a notification (called by other services) |
+| `POST` | `/api/v1/notifications` | 🔒 | Send a notification |
 | `GET` | `/api/v1/notifications/user/{userId}` | 🔒 | Get notifications for a user |
 
 ---
 
 ## ⚡ Resilience4j
 
-`order-service` and `delivery-service` protect their outbound Feign calls with circuit breakers and retry policies.
+Feign calls between services are protected with circuit breakers and retry policies.
 
 ```
 order-service → restaurant-service
-  @CircuitBreaker: opens after 50% failure rate in 10-call window
-  @Retry: 3 attempts with exponential backoff (1s, 2s, 4s)
+  @CircuitBreaker: opens after 50% failure rate in a 10-call window
+  @Retry: 3 attempts with exponential backoff (1s → 2s → 4s)
   Fallback: throws MenuItemUnavailableException (400)
-
-delivery-service → notification-service
-  @CircuitBreaker: opens after 50% failure rate in 10-call window
-  @Retry: 2 attempts, 500ms wait
-  Fallback: silently swallowed — notifications are best-effort
 ```
 
-The fallback philosophy differs intentionally: a missing menu item is a hard blocker for order creation. A failed "your driver is on the way" notification is not — the delivery proceeds regardless.
+The fallback philosophy: a missing menu item is a hard blocker for order creation. Notification failures are best-effort — the delivery proceeds regardless. This is now reinforced by the Kafka pattern: notification-service processes events independently, so a notification failure never rolls back a delivery.
 
-Health check endpoints expose circuit breaker state:
-```
-GET http://localhost:8083/actuator/health  ← order-service
-GET http://localhost:8084/actuator/health  ← delivery-service
-```
+---
+
+## 🔁 CI/CD — GitHub Actions
+
+Two workflows run automatically on every push and pull request:
+
+**`ci.yml`** — Continuous Integration
+- Triggered on push to any branch and on pull requests
+- Compiles the full multi-module project with `mvn clean install`
+- Runs all unit tests across every service
+- Fails the pipeline if any test fails, preventing broken code from merging
+
+**`release.yml`** — Release pipeline
+- Triggered on version tags or manual dispatch
+- Builds and packages all services
+- Creates a GitHub Release with the compiled artifacts
 
 ---
 
@@ -390,8 +425,9 @@ GET http://localhost:8084/actuator/health  ← delivery-service
 
 | URL | Description |
 |---|---|
-| `http://localhost:8761` | Eureka dashboard — see all registered services |
+| `http://localhost:8761` | Eureka dashboard — all registered services |
 | `http://localhost:5050` | pgAdmin — inspect databases and tables |
+| `http://localhost:8090` | Kafka UI — topics, messages and consumer groups |
 | `http://localhost:8081/swagger-ui.html` | Auth Service Swagger UI |
 | `http://localhost:8082/swagger-ui.html` | Restaurant Service Swagger UI |
 | `http://localhost:8083/swagger-ui.html` | Order Service Swagger UI |
@@ -403,21 +439,21 @@ GET http://localhost:8084/actuator/health  ← delivery-service
 
 ## 🧠 Design Decisions
 
-**One database per service** — Each microservice owns its schema exclusively. No shared tables, no cross-database JOINs. When a service needs data from another, it calls it via Feign. This enforces true independence and lets each service evolve its schema without coordinating with others.
+**One database per service** — Each microservice owns its schema exclusively. No shared tables, no cross-database joins. Cross-service data is referenced by ID only. This enforces true independence and lets each service evolve its schema without coordinating with others.
 
-**Cross-service references as plain Longs** — `order-service` stores `restaurantId` as a `Long`, not a JPA `@ManyToOne`. The `Restaurant` entity lives in a different database; there is no foreign key to reference. This is the most visible rule of microservices data modeling in this codebase.
+**Synchronous vs asynchronous communication by use case** — Feign is used when an immediate response is required (validating a menu item before saving an order). Kafka is used for downstream side effects that don't need to block the caller (creating a delivery after an order is confirmed, sending a notification after a driver is assigned). The choice is driven by whether the caller needs the result, not by preference.
 
-**Price snapshot at order time** — `OrderItem` stores `menuItemName` and `unitPrice` as snapshots copied from `restaurant-service` at the moment the order is created. If the restaurant changes its prices tomorrow, historical orders still show what the customer actually paid.
+**Independent event contracts** — Each service defines its own copy of the events it produces or consumes (e.g. `OrderConfirmedEvent` in both `order-service` and `delivery-service`). No shared JAR. This mirrors the same principle applied to Feign DTOs: services evolve their contracts independently, and Jackson matches fields by name at runtime.
 
-**Interface + Implementation on every service** — Every service class is defined as an interface and implemented separately. Controllers inject the interface. This makes every service layer independently mockable in unit tests with Mockito, and makes the implementation swappable without touching the controller.
+**Cross-service references as plain Longs** — `order-service` stores `restaurantId` as a `Long`, not a JPA `@ManyToOne`. The `Restaurant` entity lives in a different database — there is no foreign key to reference across service boundaries.
 
-**Gateway-level JWT validation** — The API Gateway validates the JWT once, centrally, before forwarding any secured request. Downstream services receive the resolved username via the `X-Auth-User` header and trust it without re-parsing the token. This avoids duplicating JWT validation logic across 5 services.
+**Price snapshot at order time** — `OrderItem` stores `menuItemName` and `unitPrice` as snapshots at order creation. If the restaurant changes prices tomorrow, historical orders still show what the customer actually paid.
 
-**Fallback philosophy by criticality** — `RestaurantClient` in `order-service` throws a domain exception on fallback because a missing menu item is a hard blocker: the order genuinely cannot be created. `NotificationClient` in `delivery-service` silently swallows the fallback because a notification failure should never block a delivery from being assigned or marked complete.
+**Interface + Implementation on every service** — Every service class is defined as an interface and implemented separately. Controllers inject the interface, making every service independently mockable in unit tests without loading the Spring context.
 
-**Config Server with native profile** — Configuration is centralized in `config-server/src/main/resources/config/`, one file per service. Using the `native` profile (local filesystem) keeps the setup self-contained for development. In production, swap to `git` profile to get versioned configuration history.
+**Gateway-level JWT validation** — The API Gateway validates the JWT once before forwarding any secured request. Downstream services receive the resolved username via `X-Auth-User` and trust it without re-parsing the token.
 
-**Minimal local `application.yml`** — Each microservice's local `application.yml` contains only its name and the Config Server URL. Everything else (port, database, JWT secret, Resilience4j settings) comes from Config Server. This makes environment-specific overrides a single-file change.
+**Config Server with native profile** — Configuration is centralized in `config-server/src/main/resources/config/`, one file per service. Using the `native` profile keeps the setup self-contained for development. In production, swap to `git` profile to get versioned configuration history.
 
 ---
 

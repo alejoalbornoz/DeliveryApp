@@ -1,0 +1,38 @@
+name: Release on tag
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: write
+
+jobs:
+  build-and-release:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Java 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+          cache: maven
+
+      - name: Build JARs
+        run: mvn -B -DskipTests=false clean package
+
+      - name: Create GitHub Release (con JARs)
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ github.ref_name }}
+          name: "DeliveryApp ${{ github.ref_name }}"
+          body: "Release generado automáticamente desde GitHub Actions."
+          files: |
+            */target/*.jar
+          draft: false
+          prerelease: false

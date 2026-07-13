@@ -5,6 +5,7 @@ import org.deliveryapp.order_service.dto.request.OrderItemRequestDTO;
 import org.deliveryapp.order_service.dto.request.OrderRequestDTO;
 import org.deliveryapp.order_service.dto.response.MenuItemResponseDTO;
 import org.deliveryapp.order_service.dto.response.OrderResponseDTO;
+import org.deliveryapp.order_service.event.OrderEventProducer;
 import org.deliveryapp.order_service.exception.MenuItemUnavailableException;
 import org.deliveryapp.order_service.exception.OrderNotFoundException;
 import org.deliveryapp.order_service.model.Order;
@@ -38,6 +39,9 @@ class OrderServiceTest {
 
     @InjectMocks
     private OrderService orderService;
+
+    @Mock
+    private OrderEventProducer orderEventProducer;
 
     private Order sampleOrder;
     private MenuItemResponseDTO sampleMenuItem;

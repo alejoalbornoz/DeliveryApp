@@ -20,8 +20,6 @@ services:
       timeout: 5s
       retries: 5
 
-  # Creates the remaining databases once postgres is healthy.
-  # Uses a separate one-shot container to avoid the Windows script-mounting issue.
   postgres-init:
     image: postgres:16-alpine
     container_name: deliveryapp-postgres-init
@@ -61,7 +59,43 @@ services:
     networks:
       - deliveryapp-network
 
-# ═══════════════════════════════════════════════════
+  # ── Apache Kafka (KRaft Mode) ────────────────────
+  kafka:
+    image: apache/kafka:4.0.0
+    container_name: deliveryapp-kafka
+    restart: unless-stopped
+
+    ports:
+      - "9092:9092"
+
+    environment:
+      # El broker tendrá el id 1
+      KAFKA_NODE_ID: 1
+
+      # Kafka actuará como Broker y Controller
+      KAFKA_PROCESS_ROLES: broker,controller
+
+      # Nombre del listener interno del controller
+      KAFKA_CONTROLLER_LISTENER_NAMES: CONTROLLER
+
+      # Define los listeners
+      KAFKA_LISTENERS: PLAINTEXT://:9092,CONTROLLER://:9093
+
+      # Dirección que utilizarán los clientes
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://localhost:9092
+
+      # Qué protocolo usa cada listener
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: CONTROLLER:PLAINTEXT,PLAINTEXT:PLAINTEXT
+
+      # Quórum de controllers (como hay uno solo, apunta a sí mismo)
+      KAFKA_CONTROLLER_QUORUM_VOTERS: 1@kafka:9093
+
+      # Directorio donde Kafka guarda los logs
+      KAFKA_LOG_DIRS: /tmp/kraft-combined-logs
+
+    networks:
+      - deliveryapp-network
+
 volumes:
   postgres_data:
   pgadmin_data:

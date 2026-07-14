@@ -34,6 +34,7 @@ services:
         psql -h postgres -U $${POSTGRES_USER:-deliveryapp} -d auth_db -c 'CREATE DATABASE order_db;' || true &&
         psql -h postgres -U $${POSTGRES_USER:-deliveryapp} -d auth_db -c 'CREATE DATABASE delivery_db;' || true &&
         psql -h postgres -U $${POSTGRES_USER:-deliveryapp} -d auth_db -c 'CREATE DATABASE notification_db;' || true &&
+        psql -h postgres -U ${POSTGRES_USER:-deliveryapp} -d auth_db -c 'CREATE DATABASE payment_db;' || true &&
         echo 'All databases created successfully.'
       "
     networks:

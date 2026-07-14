@@ -42,6 +42,11 @@ public class GatewayConfig {
                         .filters(f -> f.filter(authenticationFilter.apply(new AuthenticationFilter.Config())))
                         .uri("lb://notification-service"))
 
+                .route("payment-service", r -> r
+                        .path("/api/v1/payments/**")
+                        .filters(f -> f.filter(authenticationFilter.apply(new AuthenticationFilter.Config())))
+                        .uri("lb://payment-service"))
+
                 .build();
     }
 }

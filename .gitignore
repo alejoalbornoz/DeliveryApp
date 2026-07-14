@@ -1,0 +1,16 @@
+# Environment variables — NEVER commit this
+.env
+
+# Maven
+target/
+
+# IntelliJ
+.idea/
+*.iml
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log

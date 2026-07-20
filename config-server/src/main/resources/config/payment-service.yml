@@ -28,7 +28,7 @@ spring:
 
 app:
   payment:
-    base-url: https://survivor-tractor-overfill.ngrok-free.dev
+    base-url: {$URL_NGROK}
 
 eureka:
   client:

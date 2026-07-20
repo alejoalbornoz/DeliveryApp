@@ -10,6 +10,7 @@ import com.mercadopago.exceptions.MPException;
 import com.mercadopago.resources.preference.Preference;
 import com.mercadopago.resources.payment.Payment;
 import lombok.RequiredArgsConstructor;
+
 import lombok.extern.slf4j.Slf4j;
 import org.deliveryapp.payment_service.dto.request.PaymentRequestDTO;
 import org.deliveryapp.payment_service.dto.response.PaymentResponseDTO;
@@ -18,6 +19,7 @@ import org.deliveryapp.payment_service.event.PaymentEventProducer;
 import org.deliveryapp.payment_service.event.PaymentRejectedEvent;
 import org.deliveryapp.payment_service.model.enums.PaymentStatus;
 import org.deliveryapp.payment_service.repository.IPaymentRepository;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -32,6 +34,9 @@ public class PaymentService implements IPaymentService {
     private final IPaymentRepository paymentRepository;
     private final PaymentEventProducer paymentEventProducer;
 
+    @Value("URL_DE_NGROK")
+    private String baseUrl;
+
     @Override
     @Transactional
     public PaymentResponseDTO createPayment(PaymentRequestDTO request) {
@@ -44,10 +49,13 @@ public class PaymentService implements IPaymentService {
                     .build();
 
             // Back URLs — where MP redirects the customer after payment
+
+
+// Y en el método:
             PreferenceBackUrlsRequest backUrls = PreferenceBackUrlsRequest.builder()
-                    .success("http://localhost:8086/api/v1/payments/success")
-                    .failure("http://localhost:8086/api/v1/payments/failure")
-                    .pending("http://localhost:8086/api/v1/payments/pending")
+                    .success(baseUrl + "/api/v1/payments/success")
+                    .failure(baseUrl + "/api/v1/payments/failure")
+                    .pending(baseUrl + "/api/v1/payments/pending")
                     .build();
 
             PreferenceRequest preferenceRequest = PreferenceRequest.builder()
@@ -79,11 +87,14 @@ public class PaymentService implements IPaymentService {
 
             return toResponse(saved);
 
-        } catch (MPException | MPApiException e) {
-            log.error("MercadoPago error creating payment for orderId={}",
-                    request.getOrderId(), e);
-            throw new RuntimeException("Failed to create MercadoPago preference: "
-                    + e.getMessage());
+        } catch (MPApiException e) {
+            log.error("MercadoPago API error: status={}, content={}",
+                    e.getStatusCode(),
+                    e.getApiResponse().getContent());
+            throw new RuntimeException("Failed to create MercadoPago preference: " + e.getMessage());
+        } catch (MPException e) {
+            log.error("MercadoPago error: {}", e.getMessage());
+            throw new RuntimeException("Failed to create MercadoPago preference: " + e.getMessage());
         }
     }
 

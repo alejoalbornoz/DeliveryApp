@@ -26,6 +26,10 @@ spring:
       key-serializer: org.apache.kafka.common.serialization.StringSerializer
       value-serializer: org.springframework.kafka.support.serializer.JsonSerializer
 
+app:
+  payment:
+    base-url: https://survivor-tractor-overfill.ngrok-free.dev
+
 eureka:
   client:
     service-url:
@@ -34,7 +38,7 @@ eureka:
     prefer-ip-address: true
 
 mercadopago:
-  access-token: ${MERCADOPAGO_ACCESS_TOKEN:TU_ACCESS_TOKEN_DE_PRUEBA_ACA}
+  access-token: {$MERCADOPAGO_ACCESS_TOKEN}
 
 springdoc:
   api-docs:

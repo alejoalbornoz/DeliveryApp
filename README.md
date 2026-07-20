@@ -1,6 +1,6 @@
 # 🛵 DeliveryApp — Backend
 
-A microservices backend inspired by PedidosYa, built with Spring Boot and Spring Cloud. Covers the full delivery lifecycle: user authentication, restaurant catalog, order placement, driver assignment, and notifications — each as an independent deployable service communicating via REST (Feign) and asynchronous events (Kafka).
+A microservices backend inspired by PedidosYa, built with Spring Boot and Spring Cloud. Covers the full delivery lifecycle: user authentication, restaurant catalog, order placement, payment processing, driver assignment, and notifications — each as an independent deployable service communicating via REST (Feign) and asynchronous events (Kafka).
 
 ---
 
@@ -21,12 +21,14 @@ A microservices backend inspired by PedidosYa, built with Spring Boot and Spring
 | PostgreSQL 16 | Relational database (one DB per service) |
 | Flyway | Database migrations |
 | Apache Kafka | Asynchronous event-driven communication |
+| MercadoPago Checkout Pro | Payment processing |
 | SpringDoc / Swagger UI | API documentation |
 | Lombok | Boilerplate reduction |
 | Docker + Docker Compose | PostgreSQL, pgAdmin, Kafka, Zookeeper and Kafka UI |
 | JUnit 5 + Mockito | Unit testing |
 | Maven | Dependency management and build |
 | GitHub Actions | CI/CD pipeline (build, test, release) |
+| ngrok | Expose local webhook endpoint for MercadoPago |
 
 ---
 
@@ -37,33 +39,36 @@ Client (Postman / Frontend)
            ↓
       API Gateway :8080
            ↓  validates JWT, routes by path prefix
-─────────────────────────────────────────────────────────────
-              Eureka Discovery Server :8761
-─────────────────────────────────────────────────────────────
-    ↓              ↓              ↓               ↓
-auth-service  restaurant-   order-service   delivery-service
-  :8081        service         :8083             :8084
-               :8082             │                  │
-                           Feign →            Kafka →
-                           restaurant    [delivery-status]
-                                │                  │
-                         Kafka →          notification-service
-                       [order-confirmed]       :8085
-                                │
-                         delivery-service
-                           (consumer)
-─────────────────────────────────────────────────────────────
-              Config Server :8888
-       (serves application.yml to every service)
+─────────────────────────────────────────────────────────────────
+                  Eureka Discovery Server :8761
+─────────────────────────────────────────────────────────────────
+    ↓           ↓           ↓            ↓            ↓
+auth-service  restaurant  order-service  payment-    delivery-
+  :8081        -service     :8083        service      service
+               :8082          │           :8086        :8084
+                         Feign →            │             │
+                         restaurant    Kafka →       Kafka →
+                                    [payment-     [delivery-
+                                     approved]      status]
+                                         │             │
+                                    order-service  notification
+                                    (consumer)      -service
+                                         │           :8085
+                                    Kafka →
+                                  [order-confirmed]
+                                         │
+                                  delivery-service
+                                    (consumer)
+─────────────────────────────────────────────────────────────────
+                    Config Server :8888
+           (serves application.yml to every service)
 ```
 
 ### Inter-service communication
 
-Two communication patterns coexist depending on whether the call needs an immediate response:
-
 **Synchronous (OpenFeign):** `order-service` calls `restaurant-service` to validate menu items at order creation time. A response is required before the order can be saved.
 
-**Asynchronous (Kafka):** When an order is confirmed, `order-service` publishes an `ORDER_CONFIRMED` event. `delivery-service` consumes it and creates a delivery record independently, then publishes `DRIVER_ASSIGNED` / `ORDER_DELIVERED` events that `notification-service` consumes to send notifications. No service blocks waiting on another.
+**Asynchronous (Kafka):** Everything else flows through events. When a payment is approved, `payment-service` publishes a `PAYMENT_APPROVED` event. `order-service` consumes it and confirms the order, then publishes `ORDER_CONFIRMED`. `delivery-service` consumes that and creates a delivery record, then publishes `DRIVER_ASSIGNED` / `ORDER_DELIVERED` events that `notification-service` consumes to send notifications.
 
 ---
 
@@ -71,95 +76,68 @@ Two communication patterns coexist depending on whether the call needs an immedi
 
 ```
 delivery-app/
-├── pom.xml                           ← Parent POM (BOM — manages versions for all modules)
+├── pom.xml                           ← Parent POM (BOM)
 ├── docker-compose.yml                ← PostgreSQL, pgAdmin, Kafka, Zookeeper, Kafka UI
 ├── .env.example
 ├── .github/
 │   └── workflows/
-│       ├── ci.yml                    ← Build and test on every push/PR
-│       └── release.yml               ← Release pipeline
+│       ├── ci.yml
+│       └── release.yml
 │
 ├── config-server/                    ← Spring Cloud Config Server (port 8888)
-│   └── src/main/resources/
-│       ├── application.yml
-│       └── config/
-│           ├── discovery-server.yml
-│           ├── api-gateway.yml
-│           ├── auth-service.yml
-│           ├── restaurant-service.yml
-│           ├── order-service.yml
-│           ├── delivery-service.yml
-│           └── notification-service.yml
+│   └── src/main/resources/config/
+│       ├── discovery-server.yml
+│       ├── api-gateway.yml
+│       ├── auth-service.yml
+│       ├── restaurant-service.yml
+│       ├── order-service.yml
+│       ├── payment-service.yml
+│       ├── delivery-service.yml
+│       └── notification-service.yml
 │
 ├── discovery-server/                 ← Eureka Server (port 8761)
-│
 ├── api-gateway/                      ← Spring Cloud Gateway (port 8080)
-│   └── src/main/java/.../
-│       ├── filter/
-│       │   ├── AuthenticationFilter.java
-│       │   └── RouteValidator.java
-│       ├── util/JwtUtil.java
-│       └── config/GatewayConfig.java
-│
 ├── auth-service/                     ← Authentication + Users (port 8081)
-│   └── src/main/java/.../
-│       ├── controller/AuthController.java
-│       ├── service/AuthService.java / AuthServiceImpl.java
-│       ├── service/RefreshTokenService.java / RefreshTokenServiceImpl.java
-│       ├── model/User.java, RefreshToken.java
-│       ├── security/JwtTokenProvider.java, JwtAuthenticationFilter.java
-│       └── config/SecurityConfig.java
-│
 ├── restaurant-service/               ← Restaurants + Menu Catalog (port 8082)
-│   └── src/main/java/.../
-│       ├── controller/RestaurantController.java, MenuController.java
-│       ├── service/RestaurantService.java/.Impl, MenuService.java/.Impl
-│       └── model/Restaurant.java, MenuItem.java, Category.java
 │
 ├── order-service/                    ← Orders (port 8083)
+│   └── event/
+│       ├── OrderConfirmedEvent.java
+│       ├── PaymentApprovedEvent.java
+│       ├── PaymentRejectedEvent.java
+│       └── PaymentEventConsumer.java
+│
+├── payment-service/                  ← MercadoPago Payments (port 8086)
 │   └── src/main/java/.../
-│       ├── controller/OrderController.java
-│       ├── service/OrderService.java / OrderServiceImpl.java
-│       ├── client/RestaurantClient.java     ← Feign + CircuitBreaker
-│       ├── event/OrderConfirmedEvent.java
-│       └── event/OrderEventProducer.java    ← Kafka producer
+│       ├── controller/PaymentController.java
+│       ├── service/PaymentService.java / PaymentServiceImpl.java
+│       ├── model/Payment.java
+│       ├── event/PaymentApprovedEvent.java
+│       ├── event/PaymentRejectedEvent.java
+│       ├── event/PaymentEventProducer.java
+│       └── config/MercadoPagoConfig.java
 │
 ├── delivery-service/                 ← Deliveries + Drivers (port 8084)
-│   └── src/main/java/.../
-│       ├── controller/DeliveryController.java
-│       ├── service/DeliveryService.java / DeliveryServiceImpl.java
-│       ├── event/OrderConfirmedEvent.java
-│       ├── event/DeliveryStatusEvent.java
-│       ├── event/DeliveryEventConsumer.java ← Kafka consumer
-│       └── event/DeliveryEventProducer.java ← Kafka producer
-│
 └── notification-service/             ← Notifications (port 8085)
-    └── src/main/java/.../
-        ├── controller/NotificationController.java
-        ├── service/NotificationService.java / NotificationServiceImpl.java
-        ├── event/DeliveryStatusEvent.java
-        └── event/NotificationEventConsumer.java ← Kafka consumer
 ```
 
 ---
 
 ## ⚙️ Configuration
 
-Every service reads its configuration from Config Server at startup. Each service's local `application.yml` contains only its name and where to find Config Server:
+Every service reads its configuration from Config Server at startup:
 
 ```yaml
 spring:
   application:
-    name: auth-service
+    name: payment-service
   config:
     import: optional:configserver:http://localhost:8888
 ```
 
-All other configuration (database URL, JWT secret, Kafka brokers, Resilience4j settings) lives in `config-server/src/main/resources/config/<service-name>.yml`.
-
 ### Environment variables
 
-Copy `.env.example` to `.env` and fill in your values:
+Copy `.env.example` to `.env`:
 
 ```bash
 cp .env.example .env
@@ -174,6 +152,7 @@ cp .env.example .env
 | `JWT_REFRESH_TOKEN_EXPIRATION_MS` | Refresh token TTL (default: 604800000 = 7 days) |
 | `PGADMIN_DEFAULT_EMAIL` | pgAdmin login email |
 | `PGADMIN_DEFAULT_PASSWORD` | pgAdmin login password |
+| `MERCADOPAGO_ACCESS_TOKEN` | MercadoPago sandbox Access Token (APP_USR-...) |
 
 ---
 
@@ -184,6 +163,7 @@ cp .env.example .env
 - Java 17
 - Maven 3.8+
 - Docker Desktop
+- ngrok (for MercadoPago webhooks)
 
 ### 1. Start infrastructure containers
 
@@ -191,15 +171,31 @@ cp .env.example .env
 docker compose up -d
 ```
 
-This starts PostgreSQL, pgAdmin, Zookeeper, Kafka and Kafka UI. The init container also creates one database per service automatically:
+Creates: PostgreSQL, pgAdmin, Zookeeper, Kafka, Kafka UI and all databases:
 
 ```
-auth_db  /  restaurant_db  /  order_db  /  delivery_db  /  notification_db
+auth_db / restaurant_db / order_db / payment_db / delivery_db / notification_db
 ```
 
-### 2. Start services in order
+### 2. Start ngrok (required for MercadoPago webhooks)
 
-Each service must be started in a separate terminal. Order matters because of dependencies:
+```bash
+ngrok http 8086
+```
+
+Copy the generated URL (e.g. `https://abc123.ngrok-free.app`) and set it in `config-server/src/main/resources/config/payment-service.yml`:
+
+```yaml
+app:
+  payment:
+    base-url: https://abc123.ngrok-free.app
+```
+
+Also configure the webhook URL in your MercadoPago Developers dashboard:
+- **URL:** `https://abc123.ngrok-free.app/api/v1/payments/webhook`
+- **Events:** Pagos (legacy)
+
+### 3. Start services in order
 
 ```bash
 # Terminal 1 — Config Server (must be first)
@@ -211,48 +207,36 @@ cd discovery-server && mvn spring-boot:run
 # Terminal 3 — API Gateway
 cd api-gateway && mvn spring-boot:run
 
-# Terminal 4 — Auth Service
+# Terminals 4-9 — Business services
 cd auth-service && mvn spring-boot:run
-
-# Terminal 5 — Restaurant Service
 cd restaurant-service && mvn spring-boot:run
-
-# Terminal 6 — Order Service
 cd order-service && mvn spring-boot:run
-
-# Terminal 7 — Delivery Service
+cd payment-service && mvn spring-boot:run
 cd delivery-service && mvn spring-boot:run
-
-# Terminal 8 — Notification Service
 cd notification-service && mvn spring-boot:run
 ```
 
-> ⚠️ Config Server must be running before any other service. Kafka warnings in delivery-service and notification-service logs are normal until the Kafka container is fully healthy — the consumers reconnect automatically.
+> ⚠️ If `MERCADOPAGO_ACCESS_TOKEN` is set as a system environment variable, run `payment-service` in the same terminal where the variable is set.
 
 ### Stop containers
 
 ```bash
-# Stop but keep data
-docker compose stop
-
-# Stop and remove containers
-docker compose down
-
-# Stop and remove everything including volumes
-docker compose down -v
+docker compose down        # stop and remove containers
+docker compose down -v     # also remove volumes (wipes all data)
 ```
 
 ---
 
 ## 🗄️ Database
 
-Each microservice owns its own PostgreSQL database. No shared tables, no cross-database joins. Cross-service data is referenced by ID only.
+Each microservice owns its own PostgreSQL database. No shared tables, no cross-database joins.
 
 | Service | Database |
 |---|---|
 | auth-service | auth_db |
 | restaurant-service | restaurant_db |
 | order-service | order_db |
+| payment-service | payment_db |
 | delivery-service | delivery_db |
 | notification-service | notification_db |
 
@@ -260,41 +244,64 @@ Access pgAdmin at `http://localhost:5050`
 
 | Field | Value |
 |---|---|
-| Email | admin@deliveryapp.com (or your .env value) |
-| Password | admin123 (or your .env value) |
+| Email | admin@deliveryapp.com |
+| Password | admin123 |
 | PostgreSQL host | `postgres` (Docker service name, not localhost) |
 | Port | 5432 |
 
 ---
 
-## 📨 Kafka Event Flow
+## 💳 Payment Flow (MercadoPago Checkout Pro)
 
 ```
-PATCH /api/v1/orders/{id}/status?status=CONFIRMED
+POST /api/v1/payments/create  { orderId, userId, amount, description }
         ↓
-  order-service saves status change
+payment-service creates a MercadoPago preference
         ↓
-  publishes ──► [order-confirmed] ──► Kafka
-                                          ↓
-                              delivery-service consumer
-                                          ↓
-                              creates delivery record in DB
-                                          ↓
-                              publishes ──► [delivery-status] ──► Kafka
-                                                                      ↓
-                                                        notification-service consumer
-                                                                      ↓
-                                                        persists and sends notification
+Returns { initPoint: "https://www.mercadopago.com.ar/checkout/..." }
+        ↓
+Customer pays at that URL
+        ↓
+MercadoPago calls POST /api/v1/payments/webhook (via ngrok)
+        ↓
+payment-service updates payment record in payment_db
+        ↓
+Publishes PaymentApprovedEvent or PaymentRejectedEvent → Kafka
+        ↓
+order-service consumer → order status: CONFIRMED or CANCELLED
+        ↓
+order-service publishes OrderConfirmedEvent → Kafka
+        ↓
+delivery-service → creates delivery record automatically
+        ↓
+delivery-service publishes DeliveryStatusEvent → Kafka
+        ↓
+notification-service → sends notification to the user
 ```
 
-### Kafka Topics
+### Test Cards (MercadoPago sandbox)
+
+| Card | Number | CVV | Expiry | Result |
+|---|---|---|---|---|
+| Visa | 4509 9535 6623 3704 | 123 | 11/25 | Approved |
+| Mastercard | 5031 7557 3453 0604 | 123 | 11/25 | Approved |
+| Visa | 4000 0000 0000 0002 | 123 | 11/25 | Rejected |
+
+> Use `APRO` as cardholder name to simulate approval, `OTHE` for rejection.
+> Must pay with a MercadoPago test buyer account (create one in the Developers dashboard → Cuentas de prueba).
+
+---
+
+## 📨 Kafka Topics
 
 | Topic | Producer | Consumer | Trigger |
 |---|---|---|---|
+| `payment-approved` | payment-service | order-service | MercadoPago payment approved |
+| `payment-rejected` | payment-service | order-service | MercadoPago payment rejected |
 | `order-confirmed` | order-service | delivery-service | Order status → CONFIRMED |
 | `delivery-status` | delivery-service | notification-service | Driver assigned or delivery completed |
 
-Access Kafka UI at `http://localhost:8090` to inspect topics, messages and consumer groups in real time.
+Access Kafka UI at `http://localhost:8090` to inspect topics, messages and consumer groups.
 
 ---
 
@@ -305,20 +312,20 @@ POST /api/v1/auth/register  →  201 { accessToken, refreshToken, user }
 POST /api/v1/auth/login     →  200 { accessToken, refreshToken, user }
 
 GET  /api/v1/orders         →  Authorization: Bearer <accessToken>
-                               API Gateway validates JWT → forwards to order-service
-                               Downstream services trust X-Auth-User header
+                               API Gateway validates JWT → forwards downstream
+                               Services trust X-Auth-User header
 
 POST /api/v1/auth/refresh   →  body: { refreshToken }  →  200 { new tokens }
 POST /api/v1/auth/logout    →  body: { refreshToken }  →  204
-```
 
-Access tokens expire in 15 minutes. Refresh tokens expire in 7 days and rotate on every use.
+POST /api/v1/payments/webhook → Public (called by MercadoPago, no JWT)
+```
 
 ### User Roles
 
 | Role | Description |
 |---|---|
-| `ROLE_CUSTOMER` | Places orders |
+| `ROLE_CUSTOMER` | Places orders and makes payments |
 | `ROLE_RESTAURANT_OWNER` | Manages restaurant and menu |
 | `ROLE_DRIVER` | Receives delivery assignments |
 | `ROLE_ADMIN` | Full access |
@@ -329,7 +336,7 @@ Access tokens expire in 15 minutes. Refresh tokens expire in 7 days and rotate o
 
 All requests go through the API Gateway at `http://localhost:8080`.
 
-### Authentication (`/api/v1/auth`)
+### Authentication
 
 | Method | Endpoint | Auth | Description |
 |---|---|---|---|
@@ -338,7 +345,7 @@ All requests go through the API Gateway at `http://localhost:8080`.
 | `POST` | `/api/v1/auth/refresh` | Public | Refresh access token |
 | `POST` | `/api/v1/auth/logout` | Public | Invalidate refresh token |
 
-### Restaurants (`/api/v1/restaurants`)
+### Restaurants
 
 | Method | Endpoint | Auth | Description |
 |---|---|---|---|
@@ -349,7 +356,7 @@ All requests go through the API Gateway at `http://localhost:8080`.
 | `PUT` | `/api/v1/restaurants/{id}` | 🔒 | Update a restaurant |
 | `DELETE` | `/api/v1/restaurants/{id}` | 🔒 | Delete a restaurant |
 
-### Menu (`/api/v1/menu`)
+### Menu
 
 | Method | Endpoint | Auth | Description |
 |---|---|---|---|
@@ -360,17 +367,25 @@ All requests go through the API Gateway at `http://localhost:8080`.
 | `PATCH` | `/api/v1/menu/{id}/availability` | 🔒 | Toggle item availability |
 | `DELETE` | `/api/v1/menu/{id}` | 🔒 | Delete a menu item |
 
-### Orders (`/api/v1/orders`)
+### Orders
 
 | Method | Endpoint | Auth | Description |
 |---|---|---|---|
 | `POST` | `/api/v1/orders` | 🔒 | Create an order (validates items via Feign) |
 | `GET` | `/api/v1/orders/{id}` | 🔒 | Get order by ID |
 | `GET` | `/api/v1/orders/user/{userId}` | 🔒 | List orders by user |
-| `PATCH` | `/api/v1/orders/{id}/status` | 🔒 | Update order status (triggers Kafka event on CONFIRMED) |
+| `PATCH` | `/api/v1/orders/{id}/status` | 🔒 | Update order status |
 | `PATCH` | `/api/v1/orders/{id}/cancel` | 🔒 | Cancel an order |
 
-### Delivery (`/api/v1/delivery`)
+### Payments
+
+| Method | Endpoint | Auth | Description |
+|---|---|---|---|
+| `POST` | `/api/v1/payments/create` | 🔒 | Create MercadoPago preference and get payment URL |
+| `POST` | `/api/v1/payments/webhook` | Public | Webhook called by MercadoPago with payment result |
+| `GET` | `/api/v1/payments/order/{orderId}` | 🔒 | Get payment status by order |
+
+### Delivery
 
 | Method | Endpoint | Auth | Description |
 |---|---|---|---|
@@ -380,7 +395,7 @@ All requests go through the API Gateway at `http://localhost:8080`.
 | `PATCH` | `/api/v1/delivery/{id}/assign` | 🔒 | Assign next available driver |
 | `PATCH` | `/api/v1/delivery/{id}/status` | 🔒 | Update delivery status |
 
-### Notifications (`/api/v1/notifications`)
+### Notifications
 
 | Method | Endpoint | Auth | Description |
 |---|---|---|---|
@@ -391,8 +406,6 @@ All requests go through the API Gateway at `http://localhost:8080`.
 
 ## ⚡ Resilience4j
 
-Feign calls between services are protected with circuit breakers and retry policies.
-
 ```
 order-service → restaurant-service
   @CircuitBreaker: opens after 50% failure rate in a 10-call window
@@ -400,24 +413,13 @@ order-service → restaurant-service
   Fallback: throws MenuItemUnavailableException (400)
 ```
 
-The fallback philosophy: a missing menu item is a hard blocker for order creation. Notification failures are best-effort — the delivery proceeds regardless. This is now reinforced by the Kafka pattern: notification-service processes events independently, so a notification failure never rolls back a delivery.
-
 ---
 
 ## 🔁 CI/CD — GitHub Actions
 
-Two workflows run automatically on every push and pull request:
+**`ci.yml`** — Triggered on every push and pull request. Compiles the full project and runs all unit tests across every service.
 
-**`ci.yml`** — Continuous Integration
-- Triggered on push to any branch and on pull requests
-- Compiles the full multi-module project with `mvn clean install`
-- Runs all unit tests across every service
-- Fails the pipeline if any test fails, preventing broken code from merging
-
-**`release.yml`** — Release pipeline
-- Triggered on version tags or manual dispatch
-- Builds and packages all services
-- Creates a GitHub Release with the compiled artifacts
+**`release.yml`** — Triggered on version tags. Builds, packages and creates a GitHub Release.
 
 ---
 
@@ -431,29 +433,32 @@ Two workflows run automatically on every push and pull request:
 | `http://localhost:8081/swagger-ui.html` | Auth Service Swagger UI |
 | `http://localhost:8082/swagger-ui.html` | Restaurant Service Swagger UI |
 | `http://localhost:8083/swagger-ui.html` | Order Service Swagger UI |
+| `http://localhost:8086/swagger-ui.html` | Payment Service Swagger UI |
 | `http://localhost:8084/swagger-ui.html` | Delivery Service Swagger UI |
 | `http://localhost:8085/swagger-ui.html` | Notification Service Swagger UI |
-| `http://localhost:8888/auth-service/default` | Verify Config Server is serving auth config |
+| `http://localhost:8888/payment-service/default` | Verify Config Server serving payment config |
 
 ---
 
 ## 🧠 Design Decisions
 
-**One database per service** — Each microservice owns its schema exclusively. No shared tables, no cross-database joins. Cross-service data is referenced by ID only. This enforces true independence and lets each service evolve its schema without coordinating with others.
+**One database per service** — Each microservice owns its schema exclusively. No shared tables, no cross-database joins. Cross-service data is referenced by ID only.
 
-**Synchronous vs asynchronous communication by use case** — Feign is used when an immediate response is required (validating a menu item before saving an order). Kafka is used for downstream side effects that don't need to block the caller (creating a delivery after an order is confirmed, sending a notification after a driver is assigned). The choice is driven by whether the caller needs the result, not by preference.
+**Synchronous vs asynchronous by use case** — Feign is used when an immediate response is required (validating menu items before saving an order). Kafka is used for downstream side effects that don't need to block the caller (payment result → order confirmation → delivery creation → notifications).
 
-**Independent event contracts** — Each service defines its own copy of the events it produces or consumes (e.g. `OrderConfirmedEvent` in both `order-service` and `delivery-service`). No shared JAR. This mirrors the same principle applied to Feign DTOs: services evolve their contracts independently, and Jackson matches fields by name at runtime.
+**MercadoPago webhook pattern** — The payment result arrives asynchronously via webhook. `payment-service` persists the payment record before calling MercadoPago, guaranteeing a local record exists even if the webhook is delayed. The webhook handler updates the status and publishes a Kafka event — `order-service` never polls for payment status, it just reacts to the event.
 
-**Cross-service references as plain Longs** — `order-service` stores `restaurantId` as a `Long`, not a JPA `@ManyToOne`. The `Restaurant` entity lives in a different database — there is no foreign key to reference across service boundaries.
+**Independent event contracts** — Each service defines its own copy of the events it produces or consumes. No shared JAR between services. Jackson matches fields by name at runtime.
 
-**Price snapshot at order time** — `OrderItem` stores `menuItemName` and `unitPrice` as snapshots at order creation. If the restaurant changes prices tomorrow, historical orders still show what the customer actually paid.
+**Cross-service references as plain Longs** — No JPA `@ManyToOne` relationships across service boundaries. Each service stores only the ID of entities owned by other services.
 
-**Interface + Implementation on every service** — Every service class is defined as an interface and implemented separately. Controllers inject the interface, making every service independently mockable in unit tests without loading the Spring context.
+**Price snapshot at order time** — `OrderItem` stores `menuItemName` and `unitPrice` at purchase time. Historical orders always show what the customer actually paid, regardless of future price changes.
 
-**Gateway-level JWT validation** — The API Gateway validates the JWT once before forwarding any secured request. Downstream services receive the resolved username via `X-Auth-User` and trust it without re-parsing the token.
+**Interface + Implementation on every service** — Controllers inject interfaces, making every service layer independently mockable in unit tests with Mockito.
 
-**Config Server with native profile** — Configuration is centralized in `config-server/src/main/resources/config/`, one file per service. Using the `native` profile keeps the setup self-contained for development. In production, swap to `git` profile to get versioned configuration history.
+**Gateway-level JWT validation** — JWT validated once at the API Gateway before forwarding any secured request. Downstream services receive the resolved username via `X-Auth-User` header and trust it without re-parsing the token.
+
+**Config Server with native profile** — All configuration centralized in `config-server/src/main/resources/config/`. Swap to `git` profile in production for versioned configuration history.
 
 ---
 

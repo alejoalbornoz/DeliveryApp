@@ -24,7 +24,7 @@ import java.util.List;
 @Component
 public class MercadoPagoGateway {
 
-    @Value("https://survivor-tractor-overfill.ngrok-free.dev")
+    @Value("${URL_NGROK}")
     private String baseUrl;
 
     @CircuitBreaker(name = "mercadoPago", fallbackMethod = "createPreferenceFallback")

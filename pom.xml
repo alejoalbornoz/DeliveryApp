@@ -26,6 +26,7 @@
         <module>auth-service</module>
         <module>restaurant-service</module>
         <module>order-service</module>
+        <module>payment-service</module>
         <module>delivery-service</module>
         <module>notification-service</module>
     </modules>
@@ -128,10 +129,21 @@
                 <scope>import</scope>
             </dependency>
 
-           <dependency>
+            <dependency>
                 <groupId>org.springframework.kafka</groupId>
                 <artifactId>spring-kafka</artifactId>
                 <version>${spring-kafka.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>io.micrometer</groupId>
+                <artifactId>micrometer-tracing-bridge-brave</artifactId>
+                <version>1.5.2</version>
+            </dependency>
+            <dependency>
+                <groupId>io.zipkin.reporter2</groupId>
+                <artifactId>zipkin-reporter-brave</artifactId>
+                <version>3.5.0</version>
             </dependency>
 
         </dependencies>

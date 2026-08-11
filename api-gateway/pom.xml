@@ -34,10 +34,19 @@
             <artifactId>spring-cloud-starter-config</artifactId>
         </dependency>
 
-        <!-- Resilience4j (circuit breaker for Gateway) -->
+        <!-- Resilience (circuit breaker for Gateway) -->
         <dependency>
             <groupId>org.springframework.cloud</groupId>
             <artifactId>spring-cloud-starter-circuitbreaker-reactor-resilience4j</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>io.micrometer</groupId>
+            <artifactId>micrometer-tracing-bridge-brave</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>io.zipkin.reporter2</groupId>
+            <artifactId>zipkin-reporter-brave</artifactId>
         </dependency>
 
         <!-- JWT validation at gateway level -->
@@ -68,7 +77,10 @@
             <artifactId>reactor-test</artifactId>
             <scope>test</scope>
         </dependency>
+
     </dependencies>
+
+
 
     <build>
         <plugins>

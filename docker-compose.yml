@@ -60,6 +60,16 @@ services:
     networks:
       - deliveryapp-network
 
+  # ── Zipkin (distributed tracing UI) ──────────────
+  zipkin:
+    image: openzipkin/zipkin:latest
+    container_name: deliveryapp-zipkin
+    restart: unless-stopped
+    ports:
+      - "9411:9411"
+    networks:
+      - deliveryapp-network
+
   # ── Apache Kafka (KRaft Mode) ────────────────────
   kafka:
     image: apache/kafka:4.0.0

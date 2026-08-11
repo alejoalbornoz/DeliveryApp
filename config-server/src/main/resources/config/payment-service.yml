@@ -46,39 +46,8 @@ springdoc:
   swagger-ui:
     path: /swagger-ui.html
 
-resilience4j:
-  circuitbreaker:
-    instances:
-      mercadoPago:
-        registerHealthIndicator: true
-        slidingWindowSize: 10
-        minimumNumberOfCalls: 5
-        permittedNumberOfCallsInHalfOpenState: 3
-        automaticTransitionFromOpenToHalfOpenEnabled: true
-        waitDurationInOpenState: 15s
-        failureRateThreshold: 50
-  retry:
-    instances:
-      mercadoPago:
-        maxAttempts: 3
-        waitDuration: 1s
-        enableExponentialBackoff: true
-        exponentialBackoffMultiplier: 2
-
 management:
   endpoints:
     web:
       exposure:
-        include: health, info, circuitbreakers
-  endpoint:
-    health:
-      show-details: always
-  health:
-    circuitbreakers:
-      enabled: true
-  tracing:
-    sampling:
-      probability: 1.0   # 100% of requests traced — lower this in production (e.g. 0.1 = 10%)
-  zipkin:
-    tracing:
-      endpoint: http://localhost:9411/api/v2/spans
+        include: health, info

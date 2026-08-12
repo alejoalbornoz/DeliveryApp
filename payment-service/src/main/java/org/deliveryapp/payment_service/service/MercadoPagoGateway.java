@@ -24,7 +24,7 @@ import java.util.List;
 @Component
 public class MercadoPagoGateway {
 
-    @Value("${URL_NGROK}")
+    @Value("${app.payment.base-url}")
     private String baseUrl;
 
     @CircuitBreaker(name = "mercadoPago", fallbackMethod = "createPreferenceFallback")
